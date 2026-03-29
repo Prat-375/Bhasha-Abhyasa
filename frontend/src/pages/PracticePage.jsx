@@ -9,27 +9,44 @@ function PracticePage() {
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
   const user = getUser();
   const token = getToken();
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/practice-questions?level=${level}&type=multiple-choice`)
+    fetch(
+      `${import.meta.env.VITE_API_URL}/api/practice-questions?level=${level}&type=multiple-choice`
+    )
       .then((res) => res.json())
       .then((data) => {
         setQuestions(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Failed to load practice questions.");
         setLoading(false);
       });
   }, [level]);
 
   const handleSelect = (questionId, optionText) => {
-    setAnswers({
-      ...answers,
+    setAnswers((prev) => ({
+      ...prev,
       [questionId]: optionText,
-    });
+    }));
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      alert("Please login first");
+      return;
+    }
+
+    if (questions.length === 0) {
+      return;
+    }
+
     let correct = 0;
 
     questions.forEach((q) => {
@@ -40,60 +57,69 @@ function PracticePage() {
     });
 
     const total = questions.length;
-    const score = Math.round((correct / total) * 100);
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
 
     setResult({ correct, total, score });
 
-    if (!user) {
-      alert("Please login first");
-      return;
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/progress/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          level,
+          theme: questions[0]?.theme?._id,
+          type: "multiple-choice",
+          totalQuestions: total,
+          correctAnswers: correct,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save progress:", err);
     }
-
-    // 🔥 send to backend
-    await fetch("http://localhost:5000/api/progress/submit", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        userId: user._id,
-        level,
-        theme: questions[0]?.theme?._id,
-        type: "multiple-choice",
-        totalQuestions: total,
-        correctAnswers: correct,
-      }),
-    });
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return <p>Loading questions...</p>;
+  }
+
+  if (error) {
+    return <p>{error}</p>;
+  }
 
   return (
     <section className="content-section">
       <h1>{level} Practice</h1>
 
-      {questions.map((q) => (
-        <div key={q._id} className="question-card">
-          <h3>{q.questionText}</h3>
+      {questions.length === 0 ? (
+        <p>No practice questions found for this level yet.</p>
+      ) : (
+        <>
+          {questions.map((q) => (
+            <div key={q._id} className="question-card">
+              <h3>{q.questionText}</h3>
 
-          {q.options.map((opt) => (
-            <button
-              key={opt.text}
-              className={`option-btn ${
-                answers[q._id] === opt.text ? "selected" : ""
-              }`}
-              onClick={() => handleSelect(q._id, opt.text)}
-            >
-              {opt.text}
-            </button>
+              {q.options.map((opt) => (
+                <button
+                  key={opt.text}
+                  className={`option-btn ${
+                    answers[q._id] === opt.text ? "selected" : ""
+                  }`}
+                  onClick={() => handleSelect(q._id, opt.text)}
+                >
+                  {opt.text}
+                </button>
+              ))}
+            </div>
           ))}
-        </div>
-      ))}
 
-      <button className="submit-btn" onClick={handleSubmit}>
-        Submit
-      </button>
+          <button className="submit-btn" onClick={handleSubmit}>
+            Submit
+          </button>
+        </>
+      )}
 
       {result && (
         <div className="result-box">

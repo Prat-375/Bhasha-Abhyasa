@@ -9,13 +9,22 @@ import practiceQuestionRoutes from "./routes/practiceQuestionRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 
+
 dotenv.config();
 
 const app = express();
 
 connectDB();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://your-vercel-app.vercel.app",
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get("/", (req, res) => {

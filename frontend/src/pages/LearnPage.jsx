@@ -7,7 +7,7 @@ function LearnPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/themes?level=${level}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/themes?level=${level}`)
       .then((res) => res.json())
       .then((data) => {
         setThemes(data);
