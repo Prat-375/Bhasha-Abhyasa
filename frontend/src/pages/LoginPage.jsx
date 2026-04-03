@@ -48,7 +48,7 @@ function LoginPage() {
     <section className="auth-section">
       <div className="auth-card">
         <h1>Login</h1>
-        <p className="section-text">Welcome back to Bhasha Abhyasa.</p>
+        <p className="section-text">Welcome to Bhasha Abhyasa.</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <input
