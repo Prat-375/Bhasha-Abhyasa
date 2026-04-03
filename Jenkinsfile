@@ -44,6 +44,46 @@ pipeline {
             }
         }
 
+        stage('Wait for Backend') {
+            steps {
+                sh '''
+                    echo "Waiting for backend to become healthy..."
+
+                    timeout=120
+                    elapsed=0
+
+                    while true; do
+                        status=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' ba-backend 2>/dev/null || echo "missing")
+
+                        echo "Current backend status: $status"
+
+                        if [ "$status" = "healthy" ]; then
+                            echo "Backend is healthy"
+                            break
+                        fi
+
+                        if [ "$status" = "unhealthy" ] || [ "$status" = "exited" ] || [ "$status" = "missing" ]; then
+                            echo "Backend failed to start"
+                            docker logs ba-backend || true
+                            exit 1
+                        fi
+
+                        if [ $elapsed -ge $timeout ]; then
+                            echo "Timed out waiting for backend"
+                            docker compose ps -a
+                            docker logs ba-backend || true
+                            exit 1
+                        fi
+
+                        sleep 5
+                        elapsed=$((elapsed + 5))
+                    done
+                '''
+            }
+        }
+        
+        
+        
         stage('Verify') {
             steps {
                 sh 'docker compose ps'
