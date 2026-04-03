@@ -49,5 +49,14 @@ pipeline {
                 sh 'docker compose ps'
             }
         }
+
+        stage('Health Check') {
+            steps {
+                sh '''
+                    sleep 5
+                    curl -f http://localhost:5000 || exit 1
+                '''
+            }
+        }
     }
 }
