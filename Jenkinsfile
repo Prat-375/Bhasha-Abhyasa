@@ -44,6 +44,15 @@ pipeline {
             }
         }
 
+        stage('Check container env') {
+            steps {
+                sh '''
+                    docker compose ps -a
+                    docker run --rm --env-file backend/.env alpine sh -c 'env | grep "^MONGO_URI=" >/dev/null && echo "MONGO_URI passed correctly" || echo "MONGO_URI not passed"'
+                '''
+            }
+        }
+
         stage('Wait for Backend') {
             steps {
                 sh '''
