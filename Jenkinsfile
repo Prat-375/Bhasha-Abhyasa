@@ -30,6 +30,18 @@ pipeline {
             }
         }
 
+        stage('Check env file') {
+            steps {
+                sh '''
+                    echo "Checking required keys in backend/.env"
+                    grep -q '^MONGO_URI=' backend/.env && echo "MONGO_URI exists" || (echo "MONGO_URI missing" && exit 1)
+                    grep -q '^PORT=' backend/.env && echo "PORT exists" || echo "PORT missing"
+                    echo "Line count in backend/.env:"
+                    wc -l backend/.env
+                '''
+            }
+        }
+
         stage('Deploy') {
             steps {
                 sh '''
