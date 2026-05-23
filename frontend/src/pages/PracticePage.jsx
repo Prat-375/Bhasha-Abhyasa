@@ -1,436 +1,613 @@
 // PracticePage.jsx
-// All level data imported from a single file — allPracticeData.js
-// Supports A1, A2, B1, B2 with quiz and fill-in-the-blank topics.
-// Other levels fall back to the original API.
+// Structure: Level → Practice → [Hören | Schreiben | Lesen | Sprechen]
+// All content aligned with Goethe Zertifikat exam formats
 
 import { useState } from "react";
 import { useParams } from "react-router";
-import { getUser, getToken } from "../utils/auth";
-import { PRACTICE_MODULES, PRACTICE_META } from "../data/allPracticeData";
+import { PRACTICE_SKILLS_BY_LEVEL } from "../data/practiceSkillsData";
 
-// ─── Type labels ───────────────────────────────────────────────────────────────
-const TYPE_LABELS = { learn: "📖 Learn", quiz: "❓ Quiz", fill: "✏️ Fill" };
-const TYPE_COLORS = { learn: "tag-learn", quiz: "tag-quiz", fill: "tag-fill" };
+const LEVEL_COLORS = {
+  A1: "#a78bfa", A2: "#34d399", B1: "#f472b6", B2: "#fbbf24", C1: "#38bdf8",
+};
 
-// ─── Quiz Topic ────────────────────────────────────────────────────────────────
-function QuizTopic({ topic, onComplete }) {
-  const [selected, setSelected]   = useState({});
+const SKILL_KEYS = ["hoeren", "schreiben", "lesen", "sprechen"];
+
+// ─── Multiple choice question ──────────────────────────────────────────────────
+function MCQuestion({ q, index, submitted, answers, onSelect }) {
+  return (
+    <div className="pr-question">
+      <p className="pr-q-text"><span className="pr-qnum">Q{index + 1}.</span> {q.q || q.text || q.question}</p>
+      <div className="pr-options">
+        {q.options.map((opt, oi) => {
+          let cls = "pr-opt";
+          if (submitted) {
+            const correctIdx = typeof q.answer === "number" ? q.answer : q.options.indexOf(q.answer);
+            if (oi === correctIdx) cls += " pr-opt-correct";
+            else if (answers[index] === oi && oi !== correctIdx) cls += " pr-opt-wrong";
+            else cls += " pr-opt-dim";
+          } else if (answers[index] === oi) {
+            cls += " pr-opt-selected";
+          }
+          return (
+            <button key={oi} className={cls} onClick={() => !submitted && onSelect(index, oi)}>
+              <span className="pr-opt-letter">{"ABCD"[oi]}</span>{opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── True/False/Not-in-text question ──────────────────────────────────────────
+function TFQuestion({ q, index, submitted, answers, onSelect }) {
+  const opts = q.options || ["richtig", "falsch", "nicht im Text"];
+  return (
+    <div className="pr-question">
+      <p className="pr-q-text"><span className="pr-qnum">Q{index + 1}.</span> {q.q || q.text}</p>
+      <div className="pr-tf-row">
+        {opts.map((opt, oi) => {
+          const isAnswer = opt === q.answer || (typeof q.answer === "boolean" && ((q.answer === true && opt === "richtig") || (q.answer === false && opt === "falsch")));
+          let cls = "pr-tf-btn";
+          if (submitted) {
+            if (isAnswer) cls += " pr-tf-correct";
+            else if (answers[index] === oi) cls += " pr-tf-wrong";
+          } else if (answers[index] === oi) {
+            cls += " pr-tf-selected";
+          }
+          return (
+            <button key={oi} className={cls} onClick={() => !submitted && onSelect(index, oi)}>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Quiz result bar ───────────────────────────────────────────────────────────
+function ResultBar({ score, total, color, onRetry }) {
+  const pct = Math.round((score / total) * 100);
+  return (
+    <div className="pr-result">
+      <div className="pr-result-score" style={{ color }}>{score}/{total}</div>
+      <div className="pr-result-pct">{pct}% — {pct >= 75 ? "Excellent! 🎉" : pct >= 50 ? "Good effort! 👍" : "Keep practising! 💪"}</div>
+      <button className="pr-retry-btn" onClick={onRetry}>Try again</button>
+    </div>
+  );
+}
+
+// ─── Hören Task ────────────────────────────────────────────────────────────────
+function HoerenTask({ task, color, onBack }) {
+  const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
-  const [score, setScore]         = useState(null);
+  const [score, setScore] = useState(0);
+  const [showTranscript, setShowTranscript] = useState(false);
 
-  const handleSelect = (qi, oi) => {
-    if (submitted) return;
-    setSelected((p) => ({ ...p, [qi]: oi }));
-  };
+  const handleSelect = (qi, oi) => setAnswers((p) => ({ ...p, [qi]: oi }));
 
   const handleSubmit = () => {
-    if (Object.keys(selected).length < topic.questions.length) {
-      alert("Please answer all questions before submitting.");
-      return;
-    }
     let correct = 0;
-    topic.questions.forEach((q, i) => { if (selected[i] === q.answer) correct++; });
+    task.questions.forEach((q, i) => {
+      const userAns = answers[i];
+      if (typeof q.answer === "number") {
+        if (userAns === q.answer) correct++;
+      } else {
+        const opts = q.options || ["richtig", "falsch", "nicht im Text"];
+        if (opts[userAns] === q.answer) correct++;
+      }
+    });
     setScore(correct);
     setSubmitted(true);
   };
 
-  const handleRetry = () => { setSelected({}); setSubmitted(false); setScore(null); };
-
-  const allAnswered = Object.keys(selected).length === topic.questions.length;
-  const pct    = score !== null ? Math.round((score / topic.questions.length) * 100) : 0;
-  const passed = pct >= 60;
+  const allAnswered = task.questions.every((_, i) => answers[i] !== undefined);
 
   return (
-    <div className="topic-container">
-      {topic.questions.map((q, qi) => (
-        <div key={qi} className="question-card">
-          <h3 className="question-text">
-            <span className="question-number">Q{qi + 1}.</span> {q.question}
-          </h3>
-          <div className="options-grid">
-            {q.options.map((opt, oi) => {
-              let cls = "option-btn";
-              if (submitted) {
-                if (oi === q.answer) cls += " correct";
-                else if (selected[qi] === oi) cls += " wrong";
-              } else if (selected[qi] === oi) cls += " selected";
-              return (
-                <button key={oi} className={cls} onClick={() => handleSelect(qi, oi)}>
-                  <span className="option-letter">{["A","B","C","D"][oi]}</span>
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
-          {submitted && (
-            <p className={`answer-feedback ${selected[qi] === q.answer ? "feedback-correct" : "feedback-wrong"}`}>
-              {selected[qi] === q.answer ? "✓ Correct!" : `✗ Correct answer: "${q.options[q.answer]}"`}
-            </p>
-          )}
-        </div>
-      ))}
+    <div className="skill-task">
+      <button className="back-btn" onClick={onBack}>← Back</button>
+      <div className="task-header">
+        <span className="task-badge" style={{ background: color + "22", color }}>🎧 Hören</span>
+        <h2 className="task-title">{task.title}</h2>
+      </div>
+
+      <div className="task-scenario">{task.scenario}</div>
+
+      <div className="transcript-box">
+        <button className="transcript-toggle" onClick={() => setShowTranscript(!showTranscript)}>
+          {showTranscript ? "▲ Hide transcript" : "▼ Show transcript (Transkript)"}
+        </button>
+        {showTranscript && (
+          <pre className="transcript-text">{task.transcript}</pre>
+        )}
+      </div>
+
+      <div className="task-questions">
+        {task.questions.map((q, i) =>
+          q.options?.length === 4 && typeof q.answer === "number" ? (
+            <MCQuestion key={i} q={q} index={i} submitted={submitted} answers={answers} onSelect={handleSelect} />
+          ) : (
+            <TFQuestion key={i} q={q} index={i} submitted={submitted} answers={answers} onSelect={handleSelect} />
+          )
+        )}
+      </div>
 
       {!submitted ? (
         <button
-          className={`primary-btn ${!allAnswered ? "btn-disabled" : ""}`}
-          onClick={handleSubmit}
+          className="pr-submit-btn"
+          style={{ background: allAnswered ? color : "rgba(255,255,255,0.1)" }}
           disabled={!allAnswered}
-        >
+          onClick={handleSubmit}>
           Submit answers
         </button>
       ) : (
-        <div className="result-box">
-          <div className={`result-score ${passed ? "result-pass" : "result-fail"}`}>
-            {score} / {topic.questions.length}
-          </div>
-          <p className="result-percent">{pct}% — {passed ? "Well done! 🎉" : "Keep practising! 💪"}</p>
-          <div className="result-actions">
-            <button className="secondary-btn" onClick={handleRetry}>Try again</button>
-            {passed && (
-              <button className="primary-btn" onClick={() => onComplete(score, topic.questions.length)}>
-                Continue →
-              </button>
-            )}
-          </div>
-        </div>
+        <ResultBar score={score} total={task.questions.length} color={color}
+          onRetry={() => { setAnswers({}); setSubmitted(false); setScore(0); }} />
       )}
     </div>
   );
 }
 
-// ─── Fill Topic ────────────────────────────────────────────────────────────────
-function FillTopic({ topic, onComplete }) {
-  const [inputs, setInputs]       = useState(topic.sentences.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+// ─── Lesen Task ────────────────────────────────────────────────────────────────
+function LesenTask({ task, color, onBack }) {
+  const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
-  const [score, setScore]         = useState(null);
-  const [hints, setHints]         = useState({});
+  const [score, setScore] = useState(0);
 
-  const handleChange = (i, v) => { if (!submitted) setInputs((p) => ({ ...p, [i]: v })); };
-  const toggleHint   = (i) => setHints((p) => ({ ...p, [i]: !p[i] }));
+  const handleSelect = (qi, oi) => setAnswers((p) => ({ ...p, [qi]: oi }));
 
   const handleSubmit = () => {
-    if (topic.sentences.some((_, i) => !inputs[i].trim())) {
-      alert("Please fill in all blanks before submitting.");
-      return;
-    }
     let correct = 0;
-    topic.sentences.forEach((s, i) => {
-      if (inputs[i].trim().toLowerCase() === s.blank.toLowerCase()) correct++;
+    task.questions.forEach((q, i) => {
+      const userAns = answers[i];
+      if (typeof q.answer === "number") {
+        if (userAns === q.answer) correct++;
+      } else {
+        const opts = q.options || ["richtig", "falsch", "nicht im Text"];
+        if (opts[userAns] === q.answer || (q.answer === true && opts[userAns] === "richtig") || (q.answer === false && opts[userAns] === "falsch")) correct++;
+      }
     });
     setScore(correct);
     setSubmitted(true);
   };
 
-  const handleRetry = () => {
-    setInputs(topic.sentences.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
-    setSubmitted(false); setScore(null); setHints({});
-  };
-
-  const allFilled = topic.sentences.every((_, i) => inputs[i].trim());
-  const pct    = score !== null ? Math.round((score / topic.sentences.length) * 100) : 0;
-  const passed = pct >= 60;
+  const allAnswered = task.questions.every((_, i) => answers[i] !== undefined);
 
   return (
-    <div className="topic-container">
-      <p className="topic-intro">Type the missing German word into each blank.</p>
+    <div className="skill-task">
+      <button className="back-btn" onClick={onBack}>← Back</button>
+      <div className="task-header">
+        <span className="task-badge" style={{ background: color + "22", color }}>📖 Lesen</span>
+        <h2 className="task-title">{task.title}</h2>
+      </div>
 
-      {topic.sentences.map((s, i) => {
-        const isCorrect = submitted && inputs[i].trim().toLowerCase() === s.blank.toLowerCase();
-        const isWrong   = submitted && !isCorrect;
-        return (
-          <div key={i} className={`fill-card ${submitted ? (isCorrect ? "fill-correct" : "fill-wrong") : ""}`}>
-            <div className="fill-sentence">
-              <span className="fill-text">{s.before}</span>
-              <input
-                type="text"
-                className={`fill-input ${submitted ? (isCorrect ? "input-correct" : "input-wrong") : ""}`}
-                value={inputs[i]}
-                onChange={(e) => handleChange(i, e.target.value)}
-                placeholder="___"
-                disabled={submitted}
-              />
-              <span className="fill-text">{s.after}</span>
+      <div className="task-instruction">{task.instruction}</div>
+
+      {/* Handle different text formats */}
+      {task.text && (
+        <div className="reading-text">
+          <pre className="reading-content">{task.text}</pre>
+        </div>
+      )}
+
+      {task.texts && (
+        <div className="reading-texts-multi">
+          {task.texts.map((t) => (
+            <div key={t.id} className="reading-text-card">
+              <span className="reading-text-id" style={{ color }}>{t.id}</span>
+              <pre className="reading-content">{t.text}</pre>
             </div>
-            <div className="fill-meta">
-              {!submitted && (
-                <button className="hint-btn" onClick={() => toggleHint(i)}>
-                  {hints[i] ? "Hide hint" : "Show hint"}
-                </button>
-              )}
-              {hints[i] && !submitted && <span className="hint-text">💡 {s.hint}</span>}
-              {submitted && isWrong    && <span className="correct-answer">✗ Answer: <strong>{s.blank}</strong></span>}
-              {submitted && isCorrect  && <span className="correct-label">✓ Correct!</span>}
-            </div>
-          </div>
-        );
-      })}
+          ))}
+        </div>
+      )}
+
+      <div className="task-questions">
+        {task.questions.map((q, i) =>
+          q.options?.length === 4 && typeof q.answer === "number" ? (
+            <MCQuestion key={i} q={q} index={i} submitted={submitted} answers={answers} onSelect={handleSelect} />
+          ) : (
+            <TFQuestion key={i} q={q} index={i} submitted={submitted} answers={answers} onSelect={handleSelect} />
+          )
+        )}
+      </div>
 
       {!submitted ? (
         <button
-          className={`primary-btn ${!allFilled ? "btn-disabled" : ""}`}
-          onClick={handleSubmit}
-          disabled={!allFilled}
-        >
-          Check answers
+          className="pr-submit-btn"
+          style={{ background: allAnswered ? color : "rgba(255,255,255,0.1)" }}
+          disabled={!allAnswered}
+          onClick={handleSubmit}>
+          Submit answers
         </button>
       ) : (
-        <div className="result-box">
-          <div className={`result-score ${passed ? "result-pass" : "result-fail"}`}>
-            {score} / {topic.sentences.length}
-          </div>
-          <p className="result-percent">{pct}% — {passed ? "Great work! 🎉" : "Keep going! 💪"}</p>
-          <div className="result-actions">
-            <button className="secondary-btn" onClick={handleRetry}>Try again</button>
-            {passed && (
-              <button className="primary-btn" onClick={() => onComplete(score, topic.sentences.length)}>
-                Continue →
-              </button>
-            )}
-          </div>
-        </div>
+        <ResultBar score={score} total={task.questions.length} color={color}
+          onRetry={() => { setAnswers({}); setSubmitted(false); setScore(0); }} />
       )}
     </div>
   );
 }
 
-// ─── Topic view ────────────────────────────────────────────────────────────────
-function TopicView({ module, topic, onBack, onComplete }) {
-  return (
-    <div className="topic-view">
-      <button className="back-btn" onClick={onBack}>← Back to {module.title}</button>
-      <div className="topic-header">
-        <span className={`topic-tag ${TYPE_COLORS[topic.type]}`}>{TYPE_LABELS[topic.type]}</span>
-        <h2>{topic.title}</h2>
-      </div>
-      {topic.type === "quiz" && <QuizTopic topic={topic} onComplete={(c, t) => onComplete(topic.id, c, t)} />}
-      {topic.type === "fill" && <FillTopic topic={topic} onComplete={(c, t) => onComplete(topic.id, c, t)} />}
-    </div>
-  );
-}
-
-// ─── Module view ───────────────────────────────────────────────────────────────
-function ModuleView({ module, completedTopics, levelColor, onSelectTopic, onBack }) {
-  const total = module.topics.length;
-  const done  = module.topics.filter((t) => completedTopics[t.id]).length;
-  const pct   = Math.round((done / total) * 100);
+// ─── Schreiben Task ────────────────────────────────────────────────────────────
+function SchreibenTask({ task, color, onBack }) {
+  const [text, setText] = useState("");
+  const [showModel, setShowModel] = useState(false);
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="module-view">
-      <button className="back-btn" onClick={onBack}>← Back to modules</button>
-      <div className="module-view-header">
-        <span className="module-icon-large">{module.icon}</span>
-        <div>
-          <h2>{module.title}</h2>
-          <p className="module-subtitle">{module.subtitle}</p>
+    <div className="skill-task">
+      <button className="back-btn" onClick={onBack}>← Back</button>
+      <div className="task-header">
+        <span className="task-badge" style={{ background: color + "22", color }}>✏️ Schreiben</span>
+        <h2 className="task-title">{task.title}</h2>
+      </div>
+
+      <div className="task-instruction">{task.instruction}</div>
+
+      {/* Input text / scenario */}
+      {task.inputText && (
+        <div className="schreiben-input-text">
+          <p className="sit-label">Read this first:</p>
+          <pre className="sit-content">{task.inputText}</pre>
         </div>
-      </div>
-      <div className="progress-bar-wrap">
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${pct}%`, background: levelColor }} />
+      )}
+
+      {task.topic && (
+        <div className="schreiben-topic">
+          <p className="topic-label">Topic:</p>
+          <p className="topic-text">"{task.topic}"</p>
         </div>
-        <span className="progress-label">{done} / {total} completed</span>
-      </div>
-      <div className="topics-list">
-        {module.topics.map((topic) => {
-          const isDone = !!completedTopics[topic.id];
-          return (
-            <button
-              key={topic.id}
-              className={`topic-row ${isDone ? "topic-done" : ""}`}
-              onClick={() => onSelectTopic(topic)}
-            >
-              <span className={`topic-tag ${TYPE_COLORS[topic.type]}`}>{TYPE_LABELS[topic.type]}</span>
-              <span className="topic-row-title">{topic.title}</span>
-              {isDone && <span className="done-badge">✓</span>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+      )}
 
-// ─── Practice grid ─────────────────────────────────────────────────────────────
-function PracticeGrid({ modules, completedTopics, meta, onSelectModule }) {
-  const totalTopics = modules.reduce((s, m) => s + m.topics.length, 0);
-  const doneTopics  = modules.reduce((s, m) => s + m.topics.filter((t) => completedTopics[t.id]).length, 0);
-  const pct = Math.round((doneTopics / totalTopics) * 100);
-
-  return (
-    <div className="a1-grid-view">
-      <div className="level-header">
-        <p className="eyebrow">Practice Mode</p>
-        <h1 style={{ color: meta.color }}>{meta.label}</h1>
-        <p>{meta.sub}</p>
-      </div>
-
-      <div className="practice-overview-bar">
-        <div className="pob-stat">
-          <span className="pob-val">{doneTopics}</span>
-          <span className="pob-label">Completed</span>
-        </div>
-        <div className="pob-progress">
-          <div className="pob-track">
-            <div className="pob-fill" style={{ width: `${pct}%`, background: meta.color }} />
-          </div>
-          <span className="pob-pct">{pct}% done</span>
-        </div>
-        <div className="pob-stat">
-          <span className="pob-val">{totalTopics - doneTopics}</span>
-          <span className="pob-label">Remaining</span>
-        </div>
-      </div>
-
-      <div className="modules-grid">
-        {modules.map((mod) => {
-          const total  = mod.topics.length;
-          const done   = mod.topics.filter((t) => completedTopics[t.id]).length;
-          const modPct = Math.round((done / total) * 100);
-          return (
-            <button key={mod.id} className="module-card" onClick={() => onSelectModule(mod)}>
-              <span className="module-icon">{mod.icon}</span>
-              <div className="module-card-body">
-                <h3>{mod.title}</h3>
-                <p>{mod.subtitle}</p>
-                <div className="card-progress-bar">
-                  <div className="card-progress-fill" style={{ width: `${modPct}%`, background: meta.color }} />
-                </div>
-                <span className="card-progress-label">{done}/{total} topics</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Legacy API (unrecognised levels) ──────────────────────────────────────────
-function LegacyPractice({ level }) {
-  const [questions, setQuestions] = useState([]);
-  const [answers,   setAnswers]   = useState({});
-  const [loading,   setLoading]   = useState(true);
-  const [result,    setResult]    = useState(null);
-  const [error,     setError]     = useState("");
-  const user  = getUser();
-  const token = getToken();
-
-  useState(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/practice-questions?level=${level}&type=multiple-choice`)
-      .then((r) => r.json())
-      .then((d) => { setQuestions(d); setLoading(false); })
-      .catch(() => { setError("Failed to load practice questions."); setLoading(false); });
-  }, [level]);
-
-  const handleSelect = (qId, text) => setAnswers((p) => ({ ...p, [qId]: text }));
-
-  const handleSubmit = async () => {
-    if (!user) { alert("Please login first"); return; }
-    if (!questions.length) return;
-    let correct = 0;
-    questions.forEach((q) => {
-      if (answers[q._id] === q.options.find((o) => o.isCorrect)?.text) correct++;
-    });
-    const total = questions.length;
-    const score = total ? Math.round((correct / total) * 100) : 0;
-    setResult({ correct, total, score });
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/progress/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ level, theme: questions[0]?.theme?._id, type: "multiple-choice", totalQuestions: total, correctAnswers: correct }),
-      });
-    } catch (e) { console.error(e); }
-  };
-
-  if (loading) return <p>Loading questions...</p>;
-  if (error)   return <p>{error}</p>;
-
-  return (
-    <section className="content-section">
-      <h1>{level} Practice</h1>
-      {questions.length === 0 ? <p>No practice questions found for this level yet.</p> : (
-        <>
-          {questions.map((q) => (
-            <div key={q._id} className="question-card">
-              <h3>{q.questionText}</h3>
-              {q.options.map((opt) => (
-                <button
-                  key={opt.text}
-                  className={`option-btn ${answers[q._id] === opt.text ? "selected" : ""}`}
-                  onClick={() => handleSelect(q._id, opt.text)}
-                >{opt.text}</button>
-              ))}
+      {/* Points to cover */}
+      {task.points && (
+        <div className="schreiben-checklist">
+          <p className="cl-label">Your answer should include:</p>
+          {task.points.map((p, i) => (
+            <div key={i} className="cl-item">
+              <span className="cl-num" style={{ color }}>{i + 1}</span> {p}
             </div>
           ))}
-          <button className="submit-btn" onClick={handleSubmit}>Submit</button>
-        </>
-      )}
-      {result && (
-        <div className="result-box">
-          <h2>Result</h2>
-          <p>{result.correct} / {result.total}</p>
-          <p>Score: {result.score}%</p>
         </div>
       )}
-    </section>
+
+      {task.structure && (
+        <div className="schreiben-structure">
+          <p className="cl-label">Suggested structure:</p>
+          {task.structure.map((s, i) => (
+            <div key={i} className="cl-item">
+              <span className="cl-num" style={{ color }}>{i + 1}</span> {s}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Key phrases */}
+      {(task.keyPhrases || task.usefulConnectors || task.keyLanguage) && (
+        <div className="schreiben-phrases">
+          <p className="cl-label">Useful phrases:</p>
+          <div className="phrases-grid">
+            {(task.keyPhrases || task.usefulConnectors || task.keyLanguage || []).map((p, i) => (
+              <span key={i} className="phrase-chip" style={{ borderColor: color + "55" }}>{p}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Writing area */}
+      <div className="writing-area">
+        <div className="writing-area-header">
+          <span className="writing-label">Your answer:</span>
+          <span className={`word-count ${wordCount > 0 ? "wc-active" : ""}`} style={wordCount > 0 ? { color } : {}}>
+            {wordCount} words
+          </span>
+        </div>
+        <textarea
+          className="writing-textarea"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Write your answer here in German..."
+          rows={12}
+        />
+      </div>
+
+      {/* Model answer toggle */}
+      <div className="model-answer-section">
+        <button className="model-toggle-btn" style={{ borderColor: color, color }}
+          onClick={() => setShowModel(!showModel)}>
+          {showModel ? "▲ Hide model answer" : "▼ Show model answer (Musterlösung)"}
+        </button>
+        {showModel && task.modelAnswer && (
+          <div className="model-answer">
+            <p className="ma-note">💡 This is one possible answer. Yours may differ — check content, not just wording.</p>
+            <pre className="ma-text">{task.modelAnswer}</pre>
+            {task.checklist && (
+              <div className="ma-checklist">
+                <p className="cl-label">Checklist:</p>
+                {task.checklist.map((item, i) => (
+                  <div key={i} className="cl-check-item">☐ {item}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────────
+// ─── Sprechen Task ─────────────────────────────────────────────────────────────
+function SprechenTask({ task, color, onBack }) {
+  const [phase, setPhase] = useState("prep"); // prep | speak | review
+
+  return (
+    <div className="skill-task">
+      <button className="back-btn" onClick={onBack}>← Back</button>
+      <div className="task-header">
+        <span className="task-badge" style={{ background: color + "22", color }}>🗣️ Sprechen</span>
+        <h2 className="task-title">{task.title}</h2>
+      </div>
+
+      {/* Phase nav */}
+      <div className="sprechen-phases">
+        {["prep", "speak", "review"].map((p) => (
+          <button key={p} className={`sp-phase-btn ${phase === p ? "sp-phase-active" : ""}`}
+            style={phase === p ? { borderColor: color, color } : {}}
+            onClick={() => setPhase(p)}>
+            {{ prep: "1. Prepare", speak: "2. Speak", review: "3. Review" }[p]}
+          </button>
+        ))}
+      </div>
+
+      {phase === "prep" && (
+        <div className="sprechen-prep">
+          <div className="sp-instruction">{task.instruction}</div>
+
+          {task.statement && (
+            <div className="sp-statement" style={{ borderLeftColor: color }}>
+              {task.statement}
+            </div>
+          )}
+
+          {task.imageDescription && (
+            <div className="sp-image-box">
+              <p className="sp-image-label">📷 Picture to describe:</p>
+              <p className="sp-image-desc">{task.imageDescription}</p>
+            </div>
+          )}
+
+          {task.task && (
+            <div className="sp-task-box" style={{ borderColor: color + "44" }}>
+              <p className="sp-task-label">Your task:</p>
+              <p className="sp-task-text">{task.task}</p>
+            </div>
+          )}
+
+          {task.points && (
+            <div className="sp-points">
+              <p className="cl-label">Talk about:</p>
+              {task.points.map((p, i) => (
+                <div key={i} className="cl-item">
+                  <span className="cl-num" style={{ color }}>{i + 1}</span> {p}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {task.structure && (
+            <div className="sp-structure">
+              <p className="cl-label">Suggested structure:</p>
+              {task.structure.map((s, i) => (
+                <div key={i} className="cl-item">
+                  <span className="cl-num" style={{ color }}>{i + 1}</span> {s}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="sp-phrases">
+            <p className="cl-label">Useful phrases:</p>
+            <div className="phrases-grid">
+              {(task.usefulPhrases || []).map((p, i) => (
+                <span key={i} className="phrase-chip" style={{ borderColor: color + "55" }}>{p}</span>
+              ))}
+            </div>
+          </div>
+
+          {task.tip && (
+            <div className="sp-tip" style={{ borderLeftColor: color }}>
+              💡 {task.tip}
+            </div>
+          )}
+
+          <button className="sp-next-btn" style={{ background: color }} onClick={() => setPhase("speak")}>
+            Ready to speak →
+          </button>
+        </div>
+      )}
+
+      {phase === "speak" && (
+        <div className="sprechen-speak">
+          <div className="sp-speak-icon">🎙️</div>
+          <h3>Time to speak!</h3>
+
+          {task.statement && (
+            <div className="sp-statement" style={{ borderLeftColor: color, textAlign: "center" }}>
+              {task.statement}
+            </div>
+          )}
+
+          <p className="sp-speak-sub">Use the phrases you prepared. Speak clearly and fully.</p>
+
+          <div className="sp-quick-ref">
+            <p className="sp-qr-label">Quick reference:</p>
+            {(task.usefulPhrases || []).slice(0, 4).map((p, i) => (
+              <div key={i} className="sp-qr-item">{p}</div>
+            ))}
+          </div>
+
+          <button className="sp-next-btn" style={{ background: color }} onClick={() => setPhase("review")}>
+            Done speaking →
+          </button>
+        </div>
+      )}
+
+      {phase === "review" && (
+        <div className="sprechen-review">
+          <h3>Self-review</h3>
+          <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>
+            Honestly assess your performance on each point:
+          </p>
+          {[
+            "Did I speak clearly and at a good pace?",
+            "Did I cover all the required points?",
+            "Did I use varied vocabulary and sentence structures?",
+            "Did I use the useful phrases?",
+            "Did I handle any difficult moments well?",
+          ].map((q, i) => (
+            <div key={i} className="review-item">
+              <p className="review-q">{q}</p>
+              <div className="review-btns">
+                {["Yes ✓", "Partly", "Not yet"].map((opt) => (
+                  <button key={opt} className="review-btn" style={{ "--rc": color }}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="sp-tip" style={{ borderLeftColor: color, marginTop: "1rem" }}>
+            💡 Practice this task 2–3 times. Record yourself if possible — listening back reveals a lot.
+          </div>
+          <button className="sp-next-btn" style={{ background: color }} onClick={() => setPhase("prep")}>
+            ← Practice again
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Skill section ─────────────────────────────────────────────────────────────
+function SkillSection({ skill, data, color }) {
+  const [activeTask, setActiveTask] = useState(null);
+
+  if (!data?.tasks?.length) {
+    return (
+      <div className="skill-section">
+        <p style={{ color: "var(--muted)" }}>Practice tasks coming soon.</p>
+      </div>
+    );
+  }
+
+  if (activeTask !== null) {
+    const task = data.tasks[activeTask];
+    const props = { task, color, onBack: () => setActiveTask(null) };
+    if (skill === "hoeren") return <HoerenTask {...props} />;
+    if (skill === "schreiben") return <SchreibenTask {...props} />;
+    if (skill === "lesen") return <LesenTask {...props} />;
+    if (skill === "sprechen") return <SprechenTask {...props} />;
+  }
+
+  return (
+    <div className="skill-section">
+      <div className="learn-section-header">
+        <div>
+          <h2 className="learn-section-title">{data.icon} {data.title}</h2>
+          <p className="learn-section-sub">{data.description}</p>
+        </div>
+      </div>
+
+      <div className="tasks-list">
+        {data.tasks.map((task, i) => (
+          <button key={task.id} className="task-card" onClick={() => setActiveTask(i)}>
+            <div className="task-card-left">
+              <div className="task-card-num" style={{ background: color + "22", color }}>{i + 1}</div>
+              <div>
+                <div className="task-card-title">{task.title}</div>
+                <div className="task-card-meta">
+                  {task.questions?.length
+                    ? `${task.questions.length} questions`
+                    : task.type === "guided-writing" || task.type === "opinion-writing" || task.type === "essay"
+                    ? "Writing task"
+                    : "Speaking task"}
+                </div>
+              </div>
+            </div>
+            <span className="task-card-arrow" style={{ color }}>→</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Practice Sub Nav ──────────────────────────────────────────────────────────
+function PracticeSubNav({ active, onChange, color }) {
+  const skills = [
+    { key: "hoeren", label: "Hören", icon: "🎧" },
+    { key: "schreiben", label: "Schreiben", icon: "✏️" },
+    { key: "lesen", label: "Lesen", icon: "📖" },
+    { key: "sprechen", label: "Sprechen", icon: "🗣️" },
+  ];
+  return (
+    <div className="sub-nav">
+      {skills.map((s) => (
+        <button
+          key={s.key}
+          className={`sub-nav-btn ${active === s.key ? "sub-nav-active" : ""}`}
+          style={active === s.key ? { background: color + "22", borderColor: color, color } : {}}
+          onClick={() => onChange(s.key)}>
+          {s.icon} {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main PracticePage ─────────────────────────────────────────────────────────
 function PracticePage() {
   const { level } = useParams();
-  const storageKey = `bhasha_practice_${level}`;
+  const [activeSkill, setActiveSkill] = useState("hoeren");
+  const color = LEVEL_COLORS[level] || "#a78bfa";
 
-  const modules = PRACTICE_MODULES[level];
-  const meta    = PRACTICE_META[level];
+  const levelData = PRACTICE_SKILLS_BY_LEVEL[level];
 
-  const [completedTopics, setCompletedTopics] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch { return {}; }
-  });
-  const [selectedModule, setSelectedModule] = useState(null);
-  const [selectedTopic,  setSelectedTopic]  = useState(null);
+  if (!levelData) {
+    return (
+      <section className="content-section">
+        <p className="eyebrow">Practice Mode</p>
+        <h1>{level} Practice</h1>
+        <p className="section-text">Practice content for this level is coming soon.</p>
+      </section>
+    );
+  }
 
-  const markComplete = (topicId, correct, total) => {
-    const updated = { ...completedTopics, [topicId]: { correct, total, completedAt: Date.now() } };
-    setCompletedTopics(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    if (selectedModule) {
-      const idx  = selectedModule.topics.findIndex((t) => t.id === topicId);
-      const next = selectedModule.topics[idx + 1];
-      setSelectedTopic(next || null);
-    }
+  const LEVEL_LABELS = {
+    A1: "Beginner", A2: "Elementary", B1: "Intermediate", B2: "Upper Intermediate", C1: "Advanced",
   };
-
-  if (!modules) return <LegacyPractice level={level} />;
 
   return (
     <section className="content-section">
-      {!selectedModule && (
-        <PracticeGrid
-          modules={modules}
-          completedTopics={completedTopics}
-          meta={meta}
-          onSelectModule={setSelectedModule}
-        />
-      )}
-      {selectedModule && !selectedTopic && (
-        <ModuleView
-          module={selectedModule}
-          completedTopics={completedTopics}
-          levelColor={meta.color}
-          onSelectTopic={setSelectedTopic}
-          onBack={() => setSelectedModule(null)}
-        />
-      )}
-      {selectedModule && selectedTopic && (
-        <TopicView
-          module={selectedModule}
-          topic={selectedTopic}
-          onBack={() => setSelectedTopic(null)}
-          onComplete={markComplete}
-        />
-      )}
+      <div className="learn-page-header">
+        <div>
+          <p className="eyebrow">Practice Mode</p>
+          <h1 style={{ color }}>
+            {level} <span style={{ color: "var(--text)", fontWeight: 400 }}>— {LEVEL_LABELS[level]}</span>
+          </h1>
+          <p className="section-text">
+            Exam-style practice tasks — Hören, Schreiben, Lesen, Sprechen.
+          </p>
+        </div>
+      </div>
+
+      <PracticeSubNav active={activeSkill} onChange={setActiveSkill} color={color} />
+
+      <SkillSection
+        skill={activeSkill}
+        data={levelData[activeSkill]}
+        color={color}
+      />
     </section>
   );
 }

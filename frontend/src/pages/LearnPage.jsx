@@ -1,532 +1,437 @@
 // LearnPage.jsx
-// All level data imported from a single file — allLevelModules.js
-// Supports A1, A2, B1, B2 with the same gamified flashcard + quiz engine.
+// Structure: Level → Learn → [Vocabulary | Grammar]
+// Vocabulary: flashcard-style word lists per topic
+// Grammar: lessons with rules, tables, examples, fill-in exercises
 
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router";
-import { LEVEL_MODULES, LEVEL_META } from "../data/allLevelModules";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router";
+import { VOCAB_BY_LEVEL } from "../data/vocabData";
+import { GRAMMAR_BY_LEVEL } from "../data/grammarData";
 
-// ─── Confetti burst ───────────────────────────────────────────────────────────
-function Confetti({ active }) {
-  if (!active) return null;
-  const pieces = Array.from({ length: 22 }, (_, i) => i);
+// ─── Level config ──────────────────────────────────────────────────────────────
+const LEVEL_COLORS = {
+  A1: "#a78bfa", A2: "#34d399", B1: "#f472b6", B2: "#fbbf24", C1: "#38bdf8",
+};
+
+const LEVEL_LABELS = {
+  A1: "Beginner", A2: "Elementary", B1: "Intermediate", B2: "Upper Intermediate", C1: "Advanced",
+};
+
+// ─── Flashcard ─────────────────────────────────────────────────────────────────
+function VocabFlashcard({ word, color, onNext, onPrev, index, total, showBack, onFlip }) {
   return (
-    <div className="confetti-wrap" aria-hidden="true">
-      {pieces.map((i) => (
-        <div
-          key={i}
-          className="confetti-piece"
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 0.5}s`,
-            background: ["#a78bfa","#34d399","#fbbf24","#f472b6","#38bdf8","#fb923c"][i % 6],
-            width: `${6 + Math.random() * 8}px`,
-            height: `${6 + Math.random() * 8}px`,
-            borderRadius: Math.random() > 0.5 ? "50%" : "2px",
-          }}
-        />
+    <div className="vfc-wrap">
+      <div className="vfc-progress-row">
+        <button className="vfc-nav-btn" onClick={onPrev} disabled={index === 0}>←</button>
+        <div className="vfc-progress-track">
+          <div className="vfc-progress-fill" style={{ width: `${((index + 1) / total) * 100}%`, background: color }} />
+        </div>
+        <span className="vfc-counter">{index + 1} / {total}</span>
+        <button className="vfc-nav-btn" onClick={onNext} disabled={index === total - 1}>→</button>
+      </div>
+
+      <p className="vfc-hint">{showBack ? "Click to see German" : "Click to see English"}</p>
+
+      <div className={`vfc-card ${showBack ? "vfc-flipped" : ""}`} onClick={onFlip}
+        style={{ "--card-color": color }}>
+        <div className="vfc-card-inner">
+          <div className="vfc-face vfc-front">
+            <div className="vfc-tag">German</div>
+            <div className="vfc-word">{word.de}</div>
+            {word.plural && word.plural !== "-" && word.plural !== "(no plural)" && (
+              <div className="vfc-plural">Pl: {word.plural}</div>
+            )}
+            {word.tip && <div className="vfc-tip">💡 {word.tip}</div>}
+          </div>
+          <div className="vfc-face vfc-back">
+            <div className="vfc-tag">English</div>
+            <div className="vfc-word vfc-word-en" style={{ color }}>{word.en}</div>
+            <div className="vfc-example">"{word.example}"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Vocabulary Section ────────────────────────────────────────────────────────
+function VocabularySection({ level }) {
+  const topics = VOCAB_BY_LEVEL[level] || [];
+  const color = LEVEL_COLORS[level];
+  const [activeTopic, setActiveTopic] = useState(0);
+  const [cardIndex, setCardIndex] = useState(0);
+  const [showBack, setShowBack] = useState(false);
+  const [viewMode, setViewMode] = useState("cards"); // "cards" | "list"
+  const [known, setKnown] = useState(new Set());
+
+  const topic = topics[activeTopic];
+  const word = topic?.words[cardIndex];
+  const totalWords = topics.reduce((s, t) => s + t.words.length, 0);
+  const knownCount = known.size;
+
+  const handleNext = () => {
+    setShowBack(false);
+    if (cardIndex < topic.words.length - 1) setCardIndex(cardIndex + 1);
+  };
+
+  const handlePrev = () => {
+    setShowBack(false);
+    if (cardIndex > 0) setCardIndex(cardIndex - 1);
+  };
+
+  const handleTopicChange = (i) => {
+    setActiveTopic(i);
+    setCardIndex(0);
+    setShowBack(false);
+  };
+
+  const markKnown = () => {
+    setKnown((prev) => new Set([...prev, `${activeTopic}-${cardIndex}`]));
+    handleNext();
+  };
+
+  const isKnown = known.has(`${activeTopic}-${cardIndex}`);
+
+  if (!topic) return <p>No vocabulary available for this level.</p>;
+
+  return (
+    <div className="learn-section">
+      <div className="learn-section-header">
+        <div>
+          <h2 className="learn-section-title">Vocabulary</h2>
+          <p className="learn-section-sub">
+            Goethe-aligned word lists · {totalWords} words · {knownCount} marked known
+          </p>
+        </div>
+        <div className="view-toggle">
+          <button className={`vt-btn ${viewMode === "cards" ? "vt-active" : ""}`}
+            onClick={() => setViewMode("cards")}>Cards</button>
+          <button className={`vt-btn ${viewMode === "list" ? "vt-active" : ""}`}
+            onClick={() => setViewMode("list")}>List</button>
+        </div>
+      </div>
+
+      {/* Topic tabs */}
+      <div className="topic-tabs">
+        {topics.map((t, i) => (
+          <button key={i}
+            className={`topic-tab ${activeTopic === i ? "topic-tab-active" : ""}`}
+            style={activeTopic === i ? { borderColor: color, color } : {}}
+            onClick={() => handleTopicChange(i)}>
+            {t.icon} {t.topic}
+          </button>
+        ))}
+      </div>
+
+      {viewMode === "cards" ? (
+        <>
+          <VocabFlashcard
+            word={word}
+            color={color}
+            index={cardIndex}
+            total={topic.words.length}
+            showBack={showBack}
+            onFlip={() => setShowBack(!showBack)}
+            onNext={handleNext}
+            onPrev={handlePrev}
+          />
+          {showBack && (
+            <div className="vfc-action-row">
+              <button className="vfc-btn vfc-btn-again" onClick={() => { setShowBack(false); handleNext(); }}>
+                🔁 Keep reviewing
+              </button>
+              <button
+                className={`vfc-btn vfc-btn-known ${isKnown ? "vfc-btn-known-done" : ""}`}
+                onClick={markKnown}>
+                {isKnown ? "✓ Known" : "✓ Mark as known"}
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="vocab-list-table">
+          <div className="vlt-header">
+            <span>German</span><span>English</span><span>Example</span><span>Plural</span>
+          </div>
+          {topic.words.map((w, i) => (
+            <div key={i} className="vlt-row">
+              <span className="vlt-de">{w.de}</span>
+              <span className="vlt-en">{w.en}</span>
+              <span className="vlt-ex">{w.example}</span>
+              <span className="vlt-pl">{w.plural}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Grammar Exercise ──────────────────────────────────────────────────────────
+function GrammarExercise({ exercises, color }) {
+  const [inputs, setInputs] = useState(exercises.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [hints, setHints] = useState({});
+
+  const handleCheck = () => {
+    let correct = 0;
+    exercises.forEach((ex, i) => {
+      // Handle multi-part answers like "stehe / auf"
+      const userParts = inputs[i].trim().toLowerCase().split(/\s*[/,]\s*/);
+      const answerParts = ex.answer.toLowerCase().split(/\s*[/,]\s*/);
+      const isCorrect = answerParts.every((part, pi) =>
+        userParts[pi] && (userParts[pi].includes(part) || part.includes(userParts[pi]))
+      );
+      if (isCorrect) correct++;
+    });
+    setScore(correct);
+    setSubmitted(true);
+  };
+
+  const reset = () => {
+    setInputs(exercises.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+    setSubmitted(false);
+    setScore(0);
+    setHints({});
+  };
+
+  const pct = submitted ? Math.round((score / exercises.length) * 100) : 0;
+
+  return (
+    <div className="grammar-exercises">
+      <h4 className="ge-title">Practice Exercises</h4>
+      {exercises.map((ex, i) => {
+        const ans = inputs[i]?.trim().toLowerCase() || "";
+        const expected = ex.answer.toLowerCase();
+        const correct = submitted && (ans.includes(expected) || expected.includes(ans) || ans === expected);
+        const wrong = submitted && !correct;
+        return (
+          <div key={i} className={`ge-item ${submitted ? (correct ? "ge-correct" : "ge-wrong") : ""}`}>
+            <div className="ge-sentence">{ex.sentence}</div>
+            <div className="ge-input-row">
+              <input
+                className={`ge-input ${submitted ? (correct ? "ge-inp-correct" : "ge-inp-wrong") : ""}`}
+                value={inputs[i]}
+                onChange={(e) => !submitted && setInputs((p) => ({ ...p, [i]: e.target.value }))}
+                placeholder="type answer..."
+                disabled={submitted}
+              />
+              {!submitted && (
+                <button className="ge-hint-btn" onClick={() => setHints((p) => ({ ...p, [i]: !p[i] }))}>
+                  hint
+                </button>
+              )}
+              {submitted && correct && <span className="ge-feedback ge-fb-ok">✓</span>}
+              {submitted && wrong && <span className="ge-feedback ge-fb-bad">✗ {ex.answer}</span>}
+            </div>
+            {hints[i] && !submitted && <div className="ge-hint-text">💡 {ex.hint}</div>}
+          </div>
+        );
+      })}
+
+      {!submitted ? (
+        <button className="ge-check-btn" style={{ background: color }} onClick={handleCheck}>
+          Check answers
+        </button>
+      ) : (
+        <div className="ge-result">
+          <span className={`ge-score ${pct >= 60 ? "ge-score-pass" : "ge-score-fail"}`}>
+            {score}/{exercises.length} — {pct}%
+          </span>
+          <span className="ge-result-msg">
+            {pct === 100 ? "Perfect! 🎉" : pct >= 60 ? "Well done! 👍" : "Keep practising! 💪"}
+          </span>
+          <button className="ge-retry-btn" onClick={reset}>Try again</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Grammar Lesson ────────────────────────────────────────────────────────────
+function GrammarLesson({ lesson, color, onBack }) {
+  const [activeTab, setActiveTab] = useState("rules");
+
+  return (
+    <div className="grammar-lesson">
+      <button className="back-btn" onClick={onBack}>← Back to lessons</button>
+
+      <div className="gl-header">
+        <span className="gl-icon">{lesson.icon}</span>
+        <h2 className="gl-title">{lesson.title}</h2>
+      </div>
+
+      <div className="gl-explanation">{lesson.explanation}</div>
+
+      <div className="gl-tabs">
+        {["rules", "table", "examples", "practice"].filter(t => t !== "table" || lesson.table).map((tab) => (
+          <button key={tab}
+            className={`gl-tab ${activeTab === tab ? "gl-tab-active" : ""}`}
+            style={activeTab === tab ? { borderColor: color, color } : {}}
+            onClick={() => setActiveTab(tab)}>
+            {{ rules: "📋 Rules", table: "📊 Table", examples: "💬 Examples", practice: "✏️ Practice" }[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "rules" && (
+        <div className="gl-rules">
+          {lesson.rules.map((rule, i) => (
+            <div key={i} className={`gl-rule ${rule.startsWith("⚠️") ? "gl-rule-warn" : ""}`}>
+              {rule}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "table" && lesson.table && (
+        <div className="gl-table-wrap">
+          <table className="gl-table">
+            <thead>
+              <tr>{lesson.table.headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {lesson.table.rows.map((row, ri) => (
+                <tr key={ri}>
+                  {row.map((cell, ci) => (
+                    ci === 0
+                      ? <td key={ci} className="gl-td-head">{cell}</td>
+                      : <td key={ci} style={cell.includes("→") ? { color } : {}}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === "examples" && (
+        <div className="gl-examples">
+          {lesson.examples.map((ex, i) => (
+            <div key={i} className="gl-example-card">
+              <div className="gl-ex-de" style={{ borderLeftColor: color }}>{ex.de}</div>
+              <div className="gl-ex-en">{ex.en}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "practice" && (
+        <GrammarExercise exercises={lesson.exercises} color={color} />
+      )}
+    </div>
+  );
+}
+
+// ─── Grammar Section ───────────────────────────────────────────────────────────
+function GrammarSection({ level, color }) {
+  const lessons = GRAMMAR_BY_LEVEL[level] || [];
+  const [activeLesson, setActiveLesson] = useState(null);
+
+  if (activeLesson !== null) {
+    return (
+      <GrammarLesson
+        lesson={lessons[activeLesson]}
+        color={color}
+        onBack={() => setActiveLesson(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="learn-section">
+      <div className="learn-section-header">
+        <div>
+          <h2 className="learn-section-title">Grammar</h2>
+          <p className="learn-section-sub">
+            {level} grammar lessons · rules, tables, examples & exercises
+          </p>
+        </div>
+      </div>
+
+      <div className="grammar-lessons-list">
+        {lessons.map((lesson, i) => (
+          <button key={lesson.id} className="gl-card" onClick={() => setActiveLesson(i)}>
+            <div className="gl-card-left">
+              <span className="gl-card-icon">{lesson.icon}</span>
+              <div>
+                <div className="gl-card-title">{lesson.title}</div>
+                <div className="gl-card-meta">
+                  {lesson.rules.length} rules · {lesson.examples.length} examples · {lesson.exercises.length} exercises
+                </div>
+              </div>
+            </div>
+            <span className="gl-card-arrow" style={{ color }}>→</span>
+          </button>
+        ))}
+        {lessons.length === 0 && (
+          <p style={{ color: "var(--muted)" }}>Grammar content coming soon for {level}.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-section selector ──────────────────────────────────────────────────────
+function LearnSubNav({ active, onChange, color }) {
+  return (
+    <div className="sub-nav">
+      {["vocabulary", "grammar"].map((s) => (
+        <button
+          key={s}
+          className={`sub-nav-btn ${active === s ? "sub-nav-active" : ""}`}
+          style={active === s ? { background: color + "22", borderColor: color, color } : {}}
+          onClick={() => onChange(s)}>
+          {s === "vocabulary" ? "📚 Vocabulary" : "📐 Grammar"}
+        </button>
       ))}
     </div>
   );
 }
 
-// ─── XP Toast ─────────────────────────────────────────────────────────────────
-function XPToast({ xp, visible }) {
-  return (
-    <div className={`xp-toast ${visible ? "xp-toast-show" : ""}`}>
-      +{xp} XP 🎉
-    </div>
-  );
-}
+// ─── Main LearnPage ────────────────────────────────────────────────────────────
+function LearnPage() {
+  const { level } = useParams();
+  const [subSection, setSubSection] = useState("vocabulary");
+  const color = LEVEL_COLORS[level] || "#a78bfa";
+  const label = LEVEL_LABELS[level] || level;
 
-// ─── Flashcard Lesson ─────────────────────────────────────────────────────────
-function FlashcardLesson({ lesson, color, glow, onComplete }) {
-  const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [seen, setSeen] = useState(new Set());
-  const [done, setDone] = useState(false);
-  const [direction, setDirection] = useState(null);
-  const cardRef = useRef(null);
+  const hasContent = VOCAB_BY_LEVEL[level] || GRAMMAR_BY_LEVEL[level];
 
-  const card = lesson.cards[index];
-  const progress = ((index) / lesson.cards.length) * 100;
-
-  const advance = (dir) => {
-    setDirection(dir);
-    setSeen((s) => new Set([...s, index]));
-    setTimeout(() => {
-      setDirection(null);
-      setFlipped(false);
-      if (index + 1 >= lesson.cards.length) {
-        setDone(true);
-      } else {
-        setIndex(index + 1);
-      }
-    }, 300);
-  };
-
-  if (done) {
+  if (!hasContent) {
     return (
-      <div className="fc-complete">
-        <div className="fc-complete-emoji">🎊</div>
-        <h2>Lesson complete!</h2>
-        <p>{lesson.cards.length} cards reviewed</p>
-        <button className="fc-next-btn" style={{ background: color }} onClick={onComplete}>
-          Continue →
-        </button>
-      </div>
+      <section className="content-section">
+        <p className="eyebrow">Learn Mode</p>
+        <h1>{level} — {label}</h1>
+        <p className="section-text">Content for this level is coming soon.</p>
+      </section>
     );
   }
-
-  return (
-    <div className="fc-wrap">
-      <div className="fc-progress-row">
-        <span className="fc-counter">{index + 1} / {lesson.cards.length}</span>
-        <div className="fc-progress-track">
-          <div className="fc-progress-fill" style={{ width: `${progress}%`, background: color }} />
-        </div>
-      </div>
-
-      <div className="fc-hint">Tap the card to reveal</div>
-
-      <div
-        ref={cardRef}
-        className={`fc-card ${flipped ? "fc-flipped" : ""} ${direction === "right" ? "fc-exit-right" : direction === "left" ? "fc-exit-left" : ""}`}
-        style={{ "--card-glow": glow, "--card-color": color }}
-        onClick={() => setFlipped(!flipped)}
-      >
-        <div className="fc-card-inner">
-          <div className="fc-card-front">
-            <div className="fc-card-tag">German</div>
-            <div className="fc-word">{card.front}</div>
-            {card.tip && <div className="fc-tip">💡 {card.tip}</div>}
-          </div>
-          <div className="fc-card-back">
-            <div className="fc-card-tag">English</div>
-            <div className="fc-word fc-word-back">{card.back}</div>
-            <div className="fc-example">"{card.example}"</div>
-          </div>
-        </div>
-      </div>
-
-      <div className={`fc-actions ${!flipped ? "fc-actions-hidden" : ""}`}>
-        <button className="fc-btn fc-btn-again" onClick={() => advance("left")}>
-          <span>🔁</span> Again
-        </button>
-        <button className="fc-btn fc-btn-got-it" onClick={() => advance("right")}>
-          <span>✓</span> Got it!
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Quiz Lesson ──────────────────────────────────────────────────────────────
-function QuizLesson({ lesson, color, onComplete }) {
-  const [qi, setQi] = useState(0);
-  const [chosen, setChosen] = useState(null);
-  const [confirmed, setConfirmed] = useState(false);
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [xpVisible, setXpVisible] = useState(false);
-  const [finished, setFinished] = useState(false);
-
-  const q = lesson.questions[qi];
-  const isCorrect = confirmed && chosen === q.answer;
-  const isWrong = confirmed && chosen !== q.answer;
-
-  const handleConfirm = () => {
-    if (chosen === null) return;
-    setConfirmed(true);
-    if (chosen === q.answer) {
-      setScore((s) => s + 1);
-      setStreak((s) => s + 1);
-      setXpVisible(true);
-      if (streak + 1 >= 2) setShowConfetti(true);
-      setTimeout(() => { setXpVisible(false); setShowConfetti(false); }, 1800);
-    } else {
-      setStreak(0);
-    }
-  };
-
-  const handleNext = () => {
-    setChosen(null);
-    setConfirmed(false);
-    if (qi + 1 >= lesson.questions.length) {
-      setFinished(true);
-    } else {
-      setQi(qi + 1);
-    }
-  };
-
-  const pct = Math.round((score / lesson.questions.length) * 100);
-
-  if (finished) {
-    return (
-      <div className="fc-complete">
-        <Confetti active={pct >= 80} />
-        <div className="fc-complete-emoji">{pct === 100 ? "🏆" : pct >= 60 ? "🎯" : "💪"}</div>
-        <h2>{pct === 100 ? "Perfect score!" : pct >= 60 ? "Well done!" : "Keep practising!"}</h2>
-        <div className="quiz-final-score" style={{ color }}>
-          {score}/{lesson.questions.length}
-        </div>
-        <p className="quiz-final-pct">{pct}% correct</p>
-        {pct < 60 ? (
-          <button className="fc-next-btn" style={{ background: "#6366f1" }} onClick={() => { setQi(0); setChosen(null); setConfirmed(false); setScore(0); setStreak(0); setFinished(false); }}>
-            Try Again
-          </button>
-        ) : (
-          <button className="fc-next-btn" style={{ background: color }} onClick={onComplete}>
-            Continue →
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="quiz-wrap">
-      <Confetti active={showConfetti} />
-      <XPToast xp={10} visible={xpVisible} />
-
-      <div className="fc-progress-row">
-        <div className="quiz-streak">
-          {streak >= 2 && <span className="streak-badge">🔥 {streak} streak!</span>}
-        </div>
-        <div className="fc-progress-track">
-          <div className="fc-progress-fill" style={{ width: `${(qi / lesson.questions.length) * 100}%`, background: color }} />
-        </div>
-        <span className="fc-counter">{qi + 1}/{lesson.questions.length}</span>
-      </div>
-
-      <div className={`quiz-card ${confirmed ? (isCorrect ? "quiz-card-correct" : "quiz-card-wrong") : ""}`}>
-        <div className="quiz-q">{q.q}</div>
-        <div className="quiz-options">
-          {q.options.map((opt, oi) => {
-            let cls = "quiz-opt";
-            if (confirmed) {
-              if (oi === q.answer) cls += " quiz-opt-correct";
-              else if (chosen === oi && oi !== q.answer) cls += " quiz-opt-wrong";
-              else cls += " quiz-opt-dim";
-            } else if (chosen === oi) {
-              cls += " quiz-opt-chosen";
-            }
-            return (
-              <button key={oi} className={cls} onClick={() => !confirmed && setChosen(oi)}>
-                <span className="quiz-opt-letter">{["A","B","C","D"][oi]}</span>
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-
-        {confirmed && (
-          <div className={`quiz-explain ${isCorrect ? "quiz-explain-correct" : "quiz-explain-wrong"}`}>
-            <span>{isCorrect ? "✓ Correct! " : "✗ Not quite. "}</span>
-            {q.explain}
-          </div>
-        )}
-      </div>
-
-      {!confirmed ? (
-        <button
-          className="quiz-confirm-btn"
-          style={{ background: chosen !== null ? color : undefined, opacity: chosen !== null ? 1 : 0.4 }}
-          onClick={handleConfirm}
-          disabled={chosen === null}
-        >
-          Check answer
-        </button>
-      ) : (
-        <button className="quiz-confirm-btn" style={{ background: color }} onClick={handleNext}>
-          {qi + 1 >= lesson.questions.length ? "See results →" : "Next question →"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── Lesson Router ────────────────────────────────────────────────────────────
-// onBack = just navigate away, NO completion recorded
-// onComplete = called only from the finish screen "Continue →" button
-function LessonView({ module, lesson, onBack, onComplete }) {
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-
-  return (
-    <div className="lesson-view">
-      <div className="lesson-topbar">
-        <button className="lesson-back-btn" onClick={() => setShowExitConfirm(true)}>✕</button>
-        <span className="lesson-title-bar">{module.emoji} {lesson.title}</span>
-        <div style={{ width: 36 }} />
-      </div>
-
-      {/* Exit confirmation — leaving does NOT mark complete */}
-      {showExitConfirm && (
-        <div className="exit-modal-overlay" onClick={() => setShowExitConfirm(false)}>
-          <div className="exit-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="exit-modal-emoji">🚪</div>
-            <h3>Leave this lesson?</h3>
-            <p>Your progress in this lesson won't be saved. Complete it to earn XP.</p>
-            <div className="exit-modal-actions">
-              <button className="exit-stay-btn" onClick={() => setShowExitConfirm(false)}>
-                Keep going
-              </button>
-              <button className="exit-leave-btn" onClick={onBack}>
-                Leave anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {lesson.type === "flashcard" ? (
-        <FlashcardLesson lesson={lesson} color={module.color} glow={module.glow} onComplete={onComplete} />
-      ) : (
-        <QuizLesson lesson={lesson} color={module.color} onComplete={onComplete} />
-      )}
-    </div>
-  );
-}
-
-// ─── Module Screen ────────────────────────────────────────────────────────────
-function ModuleScreen({ module, completed, onSelectLesson, onBack }) {
-  const total = module.lessons.length;
-  const done = module.lessons.filter((l) => completed[l.id]).length;
-  const pct = Math.round((done / total) * 100);
-  const nextLesson = module.lessons.find((l) => !completed[l.id]) || module.lessons[module.lessons.length - 1];
-
-  return (
-    <div className="module-screen">
-      <button className="back-btn" onClick={onBack}>← All modules</button>
-
-      <div className="ms-hero" style={{ "--mod-color": module.color, "--mod-glow": module.glow }}>
-        <div className="ms-emoji">{module.emoji}</div>
-        <div className="ms-info">
-          <h1 className="ms-title">{module.title}</h1>
-          <p className="ms-subtitle">{module.subtitle}</p>
-          <div className="ms-xp-badge" style={{ color: module.color, borderColor: module.color, background: module.glow }}>
-            {module.xp} XP available
-          </div>
-        </div>
-      </div>
-
-      <div className="ms-progress-row">
-        <div className="ms-progress-bar">
-          <div className="ms-progress-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${module.color}, ${module.color}aa)` }} />
-        </div>
-        <span className="ms-progress-label">{done}/{total} lessons</span>
-      </div>
-
-      <div className="ms-lessons">
-        {module.lessons.map((lesson, i) => {
-          const isDone = !!completed[lesson.id];
-          const isNext = lesson.id === nextLesson.id && !isDone;
-          const isLocked = !isDone && !isNext && i > 0 && !completed[module.lessons[i - 1]?.id];
-          return (
-            <button
-              key={lesson.id}
-              className={`ms-lesson-card ${isDone ? "ms-done" : ""} ${isNext ? "ms-next" : ""} ${isLocked ? "ms-locked" : ""}`}
-              style={isNext ? { "--mod-color": module.color, "--mod-glow": module.glow } : {}}
-              onClick={() => !isLocked && onSelectLesson(lesson)}
-              disabled={isLocked}
-            >
-              <div className="ms-lesson-status">
-                {isDone ? "✅" : isNext ? "▶" : isLocked ? "🔒" : "○"}
-              </div>
-              <div className="ms-lesson-info">
-                <span className="ms-lesson-name">{lesson.title}</span>
-                <span className="ms-lesson-meta">
-                  {lesson.type === "flashcard"
-                    ? `${lesson.cards.length} flashcards`
-                    : `${lesson.questions.length} questions`}
-                  {" · "}
-                  <span className={`ms-type-badge ms-type-${lesson.type}`}>
-                    {lesson.type === "flashcard" ? "📇 Flashcards" : "❓ Quiz"}
-                  </span>
-                </span>
-              </div>
-              {isNext && <div className="ms-start-label" style={{ color: module.color }}>Start →</div>}
-              {isDone && <div className="ms-done-xp" style={{ color: module.color }}>+XP</div>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Module Grid (Home) ───────────────────────────────────────────────────────
-function ModuleGrid({ modules, completed, totalXP, levelLabel, levelSub, onSelectModule }) {
-  const totalPossibleXP = modules.reduce((s, m) => s + m.xp, 0);
-  const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0);
-  const doneLessons = modules.reduce((s, m) => s + m.lessons.filter((l) => completed[l.id]).length, 0);
-  const streakDays = 3;
-
-  return (
-    <div className="module-grid-view">
-      <div className="mg-header">
-        <div>
-          <p className="eyebrow">Learn Mode</p>
-          <h1 className="mg-title">{levelLabel || "Dein Lernpfad"}</h1>
-          <p className="mg-subtitle">{levelSub || "Your learning path — tap a module to begin"}</p>
-        </div>
-      </div>
-
-      <div className="mg-stats">
-        <div className="mg-stat">
-          <div className="mg-stat-icon">🔥</div>
-          <div className="mg-stat-val">{streakDays}</div>
-          <div className="mg-stat-label">Day streak</div>
-        </div>
-        <div className="mg-stat">
-          <div className="mg-stat-icon">⭐</div>
-          <div className="mg-stat-val">{totalXP}</div>
-          <div className="mg-stat-label">Total XP</div>
-        </div>
-        <div className="mg-stat">
-          <div className="mg-stat-icon">📚</div>
-          <div className="mg-stat-val">{doneLessons}/{totalLessons}</div>
-          <div className="mg-stat-label">Lessons</div>
-        </div>
-        <div className="mg-stat">
-          <div className="mg-stat-icon">🎯</div>
-          <div className="mg-stat-val">{totalPossibleXP}</div>
-          <div className="mg-stat-label">XP to earn</div>
-        </div>
-      </div>
-
-      <div className="mg-modules">
-        {modules.map((mod, i) => {
-          const total = mod.lessons.length;
-          const done = mod.lessons.filter((l) => completed[l.id]).length;
-          const pct = Math.round((done / total) * 100);
-          const isComplete = done === total;
-
-          return (
-            <button
-              key={mod.id}
-              className={`mg-module-card ${isComplete ? "mg-module-complete" : ""}`}
-              style={{ "--mod-color": mod.color, "--mod-glow": mod.glow }}
-              onClick={() => onSelectModule(mod)}
-            >
-              {isComplete && <div className="mg-complete-ribbon">✓ Done</div>}
-              <div className="mg-mod-top">
-                <div className="mg-mod-emoji">{mod.emoji}</div>
-                <div className="mg-mod-xp" style={{ color: mod.color }}>{mod.xp} XP</div>
-              </div>
-              <div className="mg-mod-title">{mod.title}</div>
-              <div className="mg-mod-sub">{mod.subtitle}</div>
-              <div className="mg-mod-progress">
-                <div className="mg-mod-prog-track">
-                  <div className="mg-mod-prog-fill" style={{ width: `${pct}%`, background: mod.color }} />
-                </div>
-                <span className="mg-mod-prog-label">{done}/{total}</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Legacy view ──────────────────────────────────────────────────────────────
-function LegacyLearnView({ level }) {
-  const [themes, setThemes] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/themes?level=${level}`)
-      .then((r) => r.json())
-      .then((d) => { setThemes(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [level]);
 
   return (
     <section className="content-section">
-      <p className="eyebrow">Learn Mode</p>
-      <h1>{level} Themes</h1>
-      {loading ? <p>Loading…</p> : themes.length === 0 ? <p>No themes yet.</p> : (
-        <div className="list-block">
-          {themes.map((t) => (
-            <div key={t._id} className="list-item">
-              <div><h3>{t.title}</h3><p>{t.description}</p></div>
-            </div>
-          ))}
+      <div className="learn-page-header">
+        <div>
+          <p className="eyebrow">Learn Mode</p>
+          <h1 style={{ color }}>
+            {level} <span style={{ color: "var(--text)", fontWeight: 400 }}>— {label}</span>
+          </h1>
+          <p className="section-text">
+            Choose a section below to start learning.
+          </p>
         </div>
+      </div>
+
+      <LearnSubNav active={subSection} onChange={setSubSection} color={color} />
+
+      {subSection === "vocabulary" && (
+        <VocabularySection level={level} />
+      )}
+      {subSection === "grammar" && (
+        <GrammarSection level={level} color={color} />
       )}
     </section>
-  );
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
-function LearnPage() {
-  const { level } = useParams();
-  const storageKey = `bhasha_learn_${level}`;
-  const modules = LEVEL_MODULES[level];
-
-  const [completed, setCompleted] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch { return {}; }
-  });
-  const [totalXP, setTotalXP] = useState(() => {
-    try { return parseInt(localStorage.getItem(storageKey + "_xp") || "0"); } catch { return 0; }
-  });
-  const [activeModule, setActiveModule] = useState(null);
-  const [activeLesson, setActiveLesson] = useState(null);
-
-  const markDone = (lessonId, xpGain) => {
-    const updated = { ...completed, [lessonId]: true };
-    setCompleted(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    const newXP = totalXP + xpGain;
-    setTotalXP(newXP);
-    localStorage.setItem(storageKey + "_xp", String(newXP));
-    setActiveLesson(null);
-  };
-
-  if (!modules) return <LegacyLearnView level={level} />;
-
-  if (activeLesson && activeModule) {
-    return (
-      <div className="page-container">
-        <LessonView
-          module={activeModule}
-          lesson={activeLesson}
-          onBack={() => setActiveLesson(null)}
-          onComplete={() => markDone(activeLesson.id, Math.floor(activeModule.xp / activeModule.lessons.length))}
-        />
-      </div>
-    );
-  }
-
-  if (activeModule) {
-    return (
-      <div className="page-container">
-        <ModuleScreen
-          module={activeModule}
-          completed={completed}
-          onSelectLesson={(lesson) => setActiveLesson(lesson)}
-          onBack={() => setActiveModule(null)}
-        />
-      </div>
-    );
-  }
-
-  const meta = LEVEL_META[level] || { label: `${level} Learn`, sub: "" };
-
-  return (
-    <div className="page-container">
-      <ModuleGrid
-        modules={modules}
-        completed={completed}
-        totalXP={totalXP}
-        levelLabel={meta.label}
-        levelSub={meta.sub}
-        onSelectModule={setActiveModule}
-      />
-    </div>
   );
 }
 

@@ -1,0 +1,331 @@
+// vocabData.js
+// Goethe-Institut aligned vocabulary lists for A1 through C1.
+// Topics mirror the official Goethe Zertifikat syllabus thematic areas.
+// Each word: { de, en, article, plural, example, tip }
+
+// ─── A1 ───────────────────────────────────────────────────────────────────────
+export const A1_VOCAB = [
+  {
+    topic: "Personen & Familie",
+    icon: "👨‍👩‍👧",
+    words: [
+      { de: "der Mann", en: "man / husband", plural: "Männer", example: "Der Mann heißt Thomas.", tip: "Also means husband in context" },
+      { de: "die Frau", en: "woman / wife", plural: "Frauen", example: "Die Frau ist Lehrerin.", tip: "Also means wife / Mrs." },
+      { de: "das Kind", en: "child", plural: "Kinder", example: "Das Kind spielt.", tip: "" },
+      { de: "die Familie", en: "family", plural: "Familien", example: "Meine Familie ist groß.", tip: "" },
+      { de: "der Vater", en: "father", plural: "Väter", example: "Mein Vater arbeitet.", tip: "Informal: der Papa" },
+      { de: "die Mutter", en: "mother", plural: "Mütter", example: "Meine Mutter kocht.", tip: "Informal: die Mama" },
+      { de: "der Bruder", en: "brother", plural: "Brüder", example: "Mein Bruder ist 10.", tip: "" },
+      { de: "die Schwester", en: "sister", plural: "Schwestern", example: "Ich habe eine Schwester.", tip: "" },
+      { de: "der Freund", en: "friend / boyfriend", plural: "Freunde", example: "Mein Freund heißt Max.", tip: "Context determines meaning" },
+      { de: "die Freundin", en: "friend / girlfriend", plural: "Freundinnen", example: "Sie ist meine beste Freundin.", tip: "" },
+    ],
+  },
+  {
+    topic: "Wohnen",
+    icon: "🏠",
+    words: [
+      { de: "das Haus", en: "house", plural: "Häuser", example: "Wir wohnen in einem Haus.", tip: "" },
+      { de: "die Wohnung", en: "apartment / flat", plural: "Wohnungen", example: "Die Wohnung hat 3 Zimmer.", tip: "" },
+      { de: "das Zimmer", en: "room", plural: "Zimmer", example: "Das Zimmer ist groß.", tip: "Plural same as singular" },
+      { de: "die Küche", en: "kitchen", plural: "Küchen", example: "Ich koche in der Küche.", tip: "" },
+      { de: "das Badezimmer", en: "bathroom", plural: "Badezimmer", example: "Das Badezimmer ist klein.", tip: "" },
+      { de: "der Tisch", en: "table", plural: "Tische", example: "Der Tisch ist aus Holz.", tip: "" },
+      { de: "der Stuhl", en: "chair", plural: "Stühle", example: "Setz dich auf den Stuhl.", tip: "" },
+      { de: "das Bett", en: "bed", plural: "Betten", example: "Ich schlafe in meinem Bett.", tip: "" },
+      { de: "die Miete", en: "rent", plural: "Mieten", example: "Die Miete ist teuer.", tip: "" },
+      { de: "der Schlüssel", en: "key", plural: "Schlüssel", example: "Ich habe den Schlüssel.", tip: "Plural same as singular" },
+    ],
+  },
+  {
+    topic: "Essen & Trinken",
+    icon: "🍽️",
+    words: [
+      { de: "das Brot", en: "bread", plural: "Brote", example: "Ich esse Brot zum Frühstück.", tip: "" },
+      { de: "das Ei", en: "egg", plural: "Eier", example: "Ich koche zwei Eier.", tip: "" },
+      { de: "der Käse", en: "cheese", plural: "Käse", example: "Brot mit Käse.", tip: "" },
+      { de: "das Fleisch", en: "meat", plural: "(no plural)", example: "Ich esse kein Fleisch.", tip: "Usually uncountable" },
+      { de: "das Gemüse", en: "vegetables", plural: "(no plural)", example: "Gemüse ist gesund.", tip: "Always singular" },
+      { de: "das Obst", en: "fruit", plural: "(no plural)", example: "Obst enthält Vitamine.", tip: "Always singular" },
+      { de: "das Wasser", en: "water", plural: "Wasser", example: "Ein Wasser, bitte.", tip: "" },
+      { de: "der Kaffee", en: "coffee", plural: "Kaffees", example: "Ich trinke Kaffee.", tip: "" },
+      { de: "der Saft", en: "juice", plural: "Säfte", example: "Orangensaft ist lecker.", tip: "" },
+      { de: "die Milch", en: "milk", plural: "(no plural)", example: "Milch ist gesund.", tip: "" },
+    ],
+  },
+  {
+    topic: "Zahlen & Zeit",
+    icon: "🔢",
+    words: [
+      { de: "die Uhr", en: "clock / o'clock", plural: "Uhren", example: "Es ist 8 Uhr.", tip: "Wie viel Uhr ist es?" },
+      { de: "der Tag", en: "day", plural: "Tage", example: "Heute ist ein schöner Tag.", tip: "" },
+      { de: "die Woche", en: "week", plural: "Wochen", example: "Die Woche hat 7 Tage.", tip: "" },
+      { de: "der Monat", en: "month", plural: "Monate", example: "Januar ist ein Monat.", tip: "" },
+      { de: "das Jahr", en: "year", plural: "Jahre", example: "Ich bin 25 Jahre alt.", tip: "" },
+      { de: "heute", en: "today", plural: "-", example: "Heute ist Montag.", tip: "Adverb — no plural" },
+      { de: "morgen", en: "tomorrow", plural: "-", example: "Ich komme morgen.", tip: "Also means 'morning'" },
+      { de: "gestern", en: "yesterday", plural: "-", example: "Gestern war Sonntag.", tip: "" },
+      { de: "jetzt", en: "now", plural: "-", example: "Ich bin jetzt zu Hause.", tip: "" },
+      { de: "später", en: "later", plural: "-", example: "Bis später!", tip: "" },
+    ],
+  },
+  {
+    topic: "Verkehr & Orte",
+    icon: "🚌",
+    words: [
+      { de: "der Bahnhof", en: "train station", plural: "Bahnhöfe", example: "Der Bahnhof ist groß.", tip: "" },
+      { de: "die Straße", en: "street", plural: "Straßen", example: "Ich wohne in der Hauptstraße.", tip: "" },
+      { de: "der Bus", en: "bus", plural: "Busse", example: "Ich fahre mit dem Bus.", tip: "" },
+      { de: "die U-Bahn", en: "underground / metro", plural: "U-Bahnen", example: "Die U-Bahn kommt.", tip: "" },
+      { de: "das Taxi", en: "taxi", plural: "Taxis", example: "Ich nehme ein Taxi.", tip: "" },
+      { de: "das Fahrrad", en: "bicycle", plural: "Fahrräder", example: "Ich fahre Fahrrad.", tip: "" },
+      { de: "links", en: "left", plural: "-", example: "Biegen Sie links ab.", tip: "" },
+      { de: "rechts", en: "right", plural: "-", example: "Das Geschäft ist rechts.", tip: "" },
+      { de: "geradeaus", en: "straight ahead", plural: "-", example: "Gehen Sie geradeaus.", tip: "" },
+      { de: "weit", en: "far", plural: "-", example: "Ist es weit?", tip: "Opposite: nah/nah" },
+    ],
+  },
+];
+
+// ─── A2 ───────────────────────────────────────────────────────────────────────
+export const A2_VOCAB = [
+  {
+    topic: "Arbeit & Beruf",
+    icon: "💼",
+    words: [
+      { de: "der Beruf", en: "profession / job", plural: "Berufe", example: "Was ist Ihr Beruf?", tip: "" },
+      { de: "die Stelle", en: "position / job post", plural: "Stellen", example: "Ich suche eine Stelle.", tip: "" },
+      { de: "das Büro", en: "office", plural: "Büros", example: "Ich arbeite im Büro.", tip: "" },
+      { de: "die Besprechung", en: "meeting", plural: "Besprechungen", example: "Ich habe eine Besprechung.", tip: "" },
+      { de: "der Chef / die Chefin", en: "boss (m/f)", plural: "Chefs/Chefinnen", example: "Mein Chef ist nett.", tip: "" },
+      { de: "die Arbeitszeit", en: "working hours", plural: "Arbeitszeiten", example: "Meine Arbeitszeit ist 9–17 Uhr.", tip: "" },
+      { de: "das Gehalt", en: "salary", plural: "Gehälter", example: "Das Gehalt ist gut.", tip: "" },
+      { de: "die Kündigung", en: "dismissal / notice", plural: "Kündigungen", example: "Er hat eine Kündigung bekommen.", tip: "" },
+      { de: "der Urlaub", en: "holiday / vacation", plural: "Urlaube", example: "Ich nehme Urlaub.", tip: "" },
+      { de: "die Ausbildung", en: "vocational training", plural: "Ausbildungen", example: "Sie macht eine Ausbildung.", tip: "Key German concept" },
+    ],
+  },
+  {
+    topic: "Gesundheit",
+    icon: "🏥",
+    words: [
+      { de: "der Schmerz", en: "pain", plural: "Schmerzen", example: "Ich habe Schmerzen.", tip: "Usually plural in use" },
+      { de: "die Erkältung", en: "cold (illness)", plural: "Erkältungen", example: "Ich habe eine Erkältung.", tip: "" },
+      { de: "das Fieber", en: "fever", plural: "-", example: "Ich habe Fieber.", tip: "" },
+      { de: "die Tablette", en: "tablet / pill", plural: "Tabletten", example: "Nimm eine Tablette.", tip: "" },
+      { de: "das Krankenhaus", en: "hospital", plural: "Krankenhäuser", example: "Er ist im Krankenhaus.", tip: "" },
+      { de: "die Apotheke", en: "pharmacy", plural: "Apotheken", example: "Die Apotheke ist um die Ecke.", tip: "" },
+      { de: "der Termin", en: "appointment", plural: "Termine", example: "Ich habe einen Arzttermin.", tip: "" },
+      { de: "gesund", en: "healthy", plural: "-", example: "Ich bin gesund.", tip: "Opposite: krank" },
+      { de: "krank", en: "ill / sick", plural: "-", example: "Sie ist krank.", tip: "" },
+      { de: "sich fühlen", en: "to feel", plural: "-", example: "Ich fühle mich gut.", tip: "Reflexive verb" },
+    ],
+  },
+  {
+    topic: "Einkaufen",
+    icon: "🛍️",
+    words: [
+      { de: "der Preis", en: "price", plural: "Preise", example: "Was ist der Preis?", tip: "" },
+      { de: "das Angebot", en: "offer / deal", plural: "Angebote", example: "Das ist ein gutes Angebot.", tip: "" },
+      { de: "die Kasse", en: "checkout / till", plural: "Kassen", example: "Ich gehe zur Kasse.", tip: "" },
+      { de: "der Rabatt", en: "discount", plural: "Rabatte", example: "Gibt es einen Rabatt?", tip: "" },
+      { de: "die Größe", en: "size", plural: "Größen", example: "Welche Größe haben Sie?", tip: "" },
+      { de: "umtauschen", en: "to exchange / return", plural: "-", example: "Kann ich das umtauschen?", tip: "Separable" },
+      { de: "die Quittung", en: "receipt", plural: "Quittungen", example: "Bitte geben Sie mir eine Quittung.", tip: "" },
+      { de: "bar", en: "cash", plural: "-", example: "Ich zahle bar.", tip: "" },
+      { de: "die Kreditkarte", en: "credit card", plural: "Kreditkarten", example: "Kann ich mit Kreditkarte zahlen?", tip: "" },
+      { de: "der Einkaufszettel", en: "shopping list", plural: "Einkaufszettel", example: "Ich schreibe einen Einkaufszettel.", tip: "" },
+    ],
+  },
+  {
+    topic: "Freizeit & Hobbys",
+    icon: "🎭",
+    words: [
+      { de: "das Hobby", en: "hobby", plural: "Hobbys", example: "Was sind Ihre Hobbys?", tip: "" },
+      { de: "der Sport", en: "sport", plural: "Sportarten", example: "Ich mache Sport.", tip: "" },
+      { de: "das Kino", en: "cinema", plural: "Kinos", example: "Wir gehen ins Kino.", tip: "" },
+      { de: "das Konzert", en: "concert", plural: "Konzerte", example: "Das Konzert war toll.", tip: "" },
+      { de: "die Ausstellung", en: "exhibition", plural: "Ausstellungen", example: "Wir besuchen eine Ausstellung.", tip: "" },
+      { de: "lesen", en: "to read", plural: "-", example: "Ich lese gern Bücher.", tip: "Strong verb: liest" },
+      { de: "reisen", en: "to travel", plural: "-", example: "Wir reisen gern.", tip: "" },
+      { de: "kochen", en: "to cook", plural: "-", example: "Er kocht sehr gut.", tip: "" },
+      { de: "schwimmen", en: "to swim", plural: "-", example: "Ich schwimme jeden Tag.", tip: "" },
+      { de: "das Mitglied", en: "member", plural: "Mitglieder", example: "Ich bin Mitglied im Verein.", tip: "" },
+    ],
+  },
+];
+
+// ─── B1 ───────────────────────────────────────────────────────────────────────
+export const B1_VOCAB = [
+  {
+    topic: "Gesellschaft & Politik",
+    icon: "🏛️",
+    words: [
+      { de: "die Demokratie", en: "democracy", plural: "Demokratien", example: "Deutschland ist eine Demokratie.", tip: "" },
+      { de: "die Wahl", en: "election / choice", plural: "Wahlen", example: "Die Wahl ist am Sonntag.", tip: "" },
+      { de: "die Regierung", en: "government", plural: "Regierungen", example: "Die Regierung hat entschieden.", tip: "" },
+      { de: "das Gesetz", en: "law", plural: "Gesetze", example: "Das Gesetz gilt für alle.", tip: "" },
+      { de: "die Gleichberechtigung", en: "equal rights", plural: "-", example: "Gleichberechtigung ist wichtig.", tip: "" },
+      { de: "der Bürger", en: "citizen", plural: "Bürger", example: "Alle Bürger haben Rechte.", tip: "" },
+      { de: "der Antrag", en: "application / form", plural: "Anträge", example: "Ich stelle einen Antrag.", tip: "" },
+      { de: "die Behörde", en: "authority / office", plural: "Behörden", example: "Ich gehe zur Behörde.", tip: "" },
+      { de: "das Recht", en: "right / law", plural: "Rechte", example: "Das ist mein Recht.", tip: "" },
+      { de: "die Pflicht", en: "duty / obligation", plural: "Pflichten", example: "Das ist meine Pflicht.", tip: "" },
+    ],
+  },
+  {
+    topic: "Medien & Kommunikation",
+    icon: "📱",
+    words: [
+      { de: "die Nachricht", en: "message / news", plural: "Nachrichten", example: "Ich lese die Nachrichten.", tip: "" },
+      { de: "die Sendung", en: "broadcast / programme", plural: "Sendungen", example: "Die Sendung beginnt um 20 Uhr.", tip: "" },
+      { de: "berichten", en: "to report", plural: "-", example: "Die Zeitung berichtet darüber.", tip: "" },
+      { de: "die Meinung", en: "opinion", plural: "Meinungen", example: "Ich bin anderer Meinung.", tip: "" },
+      { de: "die Werbung", en: "advertising", plural: "Werbungen", example: "Im TV gibt es viel Werbung.", tip: "" },
+      { de: "der Bericht", en: "report", plural: "Berichte", example: "Der Bericht ist interessant.", tip: "" },
+      { de: "die Überschrift", en: "headline", plural: "Überschriften", example: "Die Überschrift ist provokant.", tip: "" },
+      { de: "kommentieren", en: "to comment", plural: "-", example: "Er kommentiert den Artikel.", tip: "" },
+      { de: "verbreiten", en: "to spread / share", plural: "-", example: "Falsche Infos verbreiten sich.", tip: "" },
+      { de: "die Quelle", en: "source", plural: "Quellen", example: "Was ist die Quelle?", tip: "" },
+    ],
+  },
+  {
+    topic: "Umwelt & Natur",
+    icon: "🌿",
+    words: [
+      { de: "die Umwelt", en: "environment", plural: "-", example: "Wir müssen die Umwelt schützen.", tip: "" },
+      { de: "der Klimawandel", en: "climate change", plural: "-", example: "Der Klimawandel ist ein Problem.", tip: "" },
+      { de: "die Energie", en: "energy", plural: "Energien", example: "Erneuerbare Energie ist wichtig.", tip: "" },
+      { de: "der Müll", en: "rubbish / waste", plural: "-", example: "Trenn deinen Müll!", tip: "Recycling is mandatory in Germany" },
+      { de: "recyceln", en: "to recycle", plural: "-", example: "Wir recyceln Glas und Papier.", tip: "" },
+      { de: "die Luftverschmutzung", en: "air pollution", plural: "-", example: "Luftverschmutzung schadet der Gesundheit.", tip: "" },
+      { de: "nachhaltig", en: "sustainable", plural: "-", example: "Nachhaltiges Leben ist wichtig.", tip: "" },
+      { de: "der Naturschutz", en: "nature conservation", plural: "-", example: "Naturschutz ist gesetzlich geregelt.", tip: "" },
+      { de: "verbrauchen", en: "to consume / use up", plural: "-", example: "Wir verbrauchen zu viel Energie.", tip: "" },
+      { de: "der Treibhauseffekt", en: "greenhouse effect", plural: "-", example: "Der Treibhauseffekt erwärmt die Erde.", tip: "" },
+    ],
+  },
+  {
+    topic: "Bildung & Schule",
+    icon: "📚",
+    words: [
+      { de: "die Prüfung", en: "exam / test", plural: "Prüfungen", example: "Ich lerne für die Prüfung.", tip: "" },
+      { de: "das Zeugnis", en: "school report / certificate", plural: "Zeugnisse", example: "Mein Zeugnis ist gut.", tip: "" },
+      { de: "die Note", en: "grade / mark", plural: "Noten", example: "Er hat gute Noten.", tip: "1 = best in Germany" },
+      { de: "das Studium", en: "university studies", plural: "Studien", example: "Das Studium dauert 3 Jahre.", tip: "" },
+      { de: "der Abschluss", en: "qualification / degree", plural: "Abschlüsse", example: "Sie hat einen guten Abschluss.", tip: "" },
+      { de: "das Fach", en: "subject", plural: "Fächer", example: "Mein Lieblingsfach ist Mathe.", tip: "" },
+      { de: "die Hausaufgabe", en: "homework", plural: "Hausaufgaben", example: "Mach deine Hausaufgaben!", tip: "" },
+      { de: "wiederholen", en: "to revise / repeat", plural: "-", example: "Ich wiederhole den Stoff.", tip: "" },
+      { de: "nachschlagen", en: "to look up", plural: "-", example: "Ich schlage das Wort nach.", tip: "Separable" },
+      { de: "die Kenntnisse", en: "knowledge / skills", plural: "-", example: "Sie hat gute Sprachkenntnisse.", tip: "Usually plural" },
+    ],
+  },
+];
+
+// ─── B2 ───────────────────────────────────────────────────────────────────────
+export const B2_VOCAB = [
+  {
+    topic: "Wirtschaft & Finanzen",
+    icon: "💹",
+    words: [
+      { de: "die Investition", en: "investment", plural: "Investitionen", example: "Die Investition hat sich gelohnt.", tip: "" },
+      { de: "der Haushalt", en: "budget / household", plural: "Haushalte", example: "Der Staatshaushalt ist groß.", tip: "" },
+      { de: "die Inflation", en: "inflation", plural: "-", example: "Die Inflation steigt.", tip: "" },
+      { de: "die Nachfrage", en: "demand", plural: "-", example: "Die Nachfrage ist gestiegen.", tip: "" },
+      { de: "das Angebot", en: "supply / offer", plural: "Angebote", example: "Angebot und Nachfrage.", tip: "" },
+      { de: "die Steuer", en: "tax", plural: "Steuern", example: "Steuern sind Pflicht.", tip: "" },
+      { de: "der Gewinn", en: "profit / gain", plural: "Gewinne", example: "Das Unternehmen macht Gewinn.", tip: "" },
+      { de: "der Verlust", en: "loss", plural: "Verluste", example: "Wir haben einen Verlust gemacht.", tip: "" },
+      { de: "die Schulden", en: "debts", plural: "-", example: "Er hat Schulden.", tip: "Always plural" },
+      { de: "die Börse", en: "stock exchange", plural: "Börsen", example: "Die Börse steigt.", tip: "" },
+    ],
+  },
+  {
+    topic: "Wissenschaft & Technik",
+    icon: "🔬",
+    words: [
+      { de: "die Forschung", en: "research", plural: "Forschungen", example: "Die Forschung macht Fortschritte.", tip: "" },
+      { de: "die Erfindung", en: "invention", plural: "Erfindungen", example: "Das ist eine wichtige Erfindung.", tip: "" },
+      { de: "entwickeln", en: "to develop", plural: "-", example: "Wir entwickeln neue Technologien.", tip: "" },
+      { de: "die Daten", en: "data", plural: "-", example: "Daten werden gespeichert.", tip: "Always plural" },
+      { de: "der Algorithmus", en: "algorithm", plural: "Algorithmen", example: "Der Algorithmus ist komplex.", tip: "" },
+      { de: "künstliche Intelligenz", en: "artificial intelligence", plural: "-", example: "KI verändert die Welt.", tip: "Abbr: KI (not AI in German)" },
+      { de: "das Experiment", en: "experiment", plural: "Experimente", example: "Das Experiment war erfolgreich.", tip: "" },
+      { de: "beweisen", en: "to prove", plural: "-", example: "Das lässt sich nicht beweisen.", tip: "Strong verb" },
+      { de: "die Hypothese", en: "hypothesis", plural: "Hypothesen", example: "Die Hypothese wurde bestätigt.", tip: "" },
+      { de: "das Ergebnis", en: "result / outcome", plural: "Ergebnisse", example: "Das Ergebnis ist überraschend.", tip: "" },
+    ],
+  },
+  {
+    topic: "Psychologie & Gefühle",
+    icon: "🧠",
+    words: [
+      { de: "das Verhalten", en: "behaviour", plural: "-", example: "Sein Verhalten ist seltsam.", tip: "" },
+      { de: "die Persönlichkeit", en: "personality", plural: "Persönlichkeiten", example: "Sie hat eine starke Persönlichkeit.", tip: "" },
+      { de: "selbstbewusst", en: "self-confident", plural: "-", example: "Er ist sehr selbstbewusst.", tip: "" },
+      { de: "die Angst", en: "fear / anxiety", plural: "Ängste", example: "Sie hat Angst vor Hunden.", tip: "Angst haben vor + dative" },
+      { de: "die Enttäuschung", en: "disappointment", plural: "Enttäuschungen", example: "Das war eine große Enttäuschung.", tip: "" },
+      { de: "die Erwartung", en: "expectation", plural: "Erwartungen", example: "Meine Erwartungen waren hoch.", tip: "" },
+      { de: "bewältigen", en: "to cope with / overcome", plural: "-", example: "Er bewältigt den Stress gut.", tip: "" },
+      { de: "das Wohlbefinden", en: "wellbeing", plural: "-", example: "Ihr Wohlbefinden ist wichtig.", tip: "" },
+      { de: "die Motivation", en: "motivation", plural: "Motivationen", example: "Was ist Ihre Motivation?", tip: "" },
+      { de: "das Selbstvertrauen", en: "self-confidence", plural: "-", example: "Er hat viel Selbstvertrauen.", tip: "" },
+    ],
+  },
+];
+
+// ─── C1 ───────────────────────────────────────────────────────────────────────
+export const C1_VOCAB = [
+  {
+    topic: "Philosophie & Ethik",
+    icon: "🦉",
+    words: [
+      { de: "die Gerechtigkeit", en: "justice", plural: "-", example: "Gerechtigkeit ist ein Grundwert.", tip: "" },
+      { de: "die Freiheit", en: "freedom / liberty", plural: "-", example: "Redefreiheit ist garantiert.", tip: "" },
+      { de: "die Würde", en: "dignity", plural: "-", example: "Die Menschenwürde ist unantastbar.", tip: "Art. 1 of German constitution" },
+      { de: "hinterfragen", en: "to question / challenge", plural: "-", example: "Wir müssen das hinterfragen.", tip: "" },
+      { de: "das Paradox", en: "paradox", plural: "Paradoxe", example: "Das ist ein klassisches Paradox.", tip: "" },
+      { de: "die Ambivalenz", en: "ambivalence", plural: "Ambivalenzen", example: "Ich empfinde Ambivalenz.", tip: "" },
+      { de: "der Konsens", en: "consensus", plural: "Konsense", example: "Wir brauchen einen Konsens.", tip: "" },
+      { de: "abwägen", en: "to weigh up / consider", plural: "-", example: "Man muss die Vor- und Nachteile abwägen.", tip: "Separable" },
+      { de: "das Dilemma", en: "dilemma", plural: "Dilemmas", example: "Er steht vor einem Dilemma.", tip: "" },
+      { de: "die Integrität", en: "integrity", plural: "-", example: "Integrität ist unverzichtbar.", tip: "" },
+    ],
+  },
+  {
+    topic: "Kultur & Kunst",
+    icon: "🎨",
+    words: [
+      { de: "das Werk", en: "work (of art)", plural: "Werke", example: "Das ist ein bekanntes Werk.", tip: "" },
+      { de: "das Erbe", en: "heritage / inheritance", plural: "Erbe", example: "Kulturelles Erbe schützen.", tip: "" },
+      { de: "die Ästhetik", en: "aesthetics", plural: "-", example: "Die Ästhetik des Films ist einzigartig.", tip: "" },
+      { de: "interpretieren", en: "to interpret", plural: "-", example: "Wie interpretieren Sie das Bild?", tip: "" },
+      { de: "die Symbolik", en: "symbolism", plural: "-", example: "Die Symbolik ist vielschichtig.", tip: "" },
+      { de: "avantgardistisch", en: "avant-garde", plural: "-", example: "Ein avantgardistischer Stil.", tip: "" },
+      { de: "das Narrativ", en: "narrative", plural: "Narrative", example: "Das Narrativ wird dekonstruiert.", tip: "" },
+      { de: "geprägt von", en: "shaped / influenced by", plural: "-", example: "Das Werk ist von der Zeit geprägt.", tip: "" },
+      { de: "rezipieren", en: "to receive / perceive (art)", plural: "-", example: "Wie wird das Kunstwerk rezipiert?", tip: "Academic/formal" },
+      { de: "vielschichtig", en: "multi-layered / complex", plural: "-", example: "Der Roman ist vielschichtig.", tip: "" },
+    ],
+  },
+  {
+    topic: "Akademische Sprache",
+    icon: "📝",
+    words: [
+      { de: "darlegen", en: "to set out / present", plural: "-", example: "Er legt seine These dar.", tip: "Separable — formal written" },
+      { de: "veranschaulichen", en: "to illustrate / demonstrate", plural: "-", example: "Das veranschaulicht das Problem.", tip: "" },
+      { de: "einräumen", en: "to concede / admit", plural: "-", example: "Man muss einräumen, dass...", tip: "Separable" },
+      { de: "widerlegen", en: "to refute", plural: "-", example: "Die These wurde widerlegt.", tip: "" },
+      { de: "herleiten", en: "to derive / deduce", plural: "-", example: "Daraus lässt sich ableiten, dass...", tip: "" },
+      { de: "differenzieren", en: "to differentiate / nuance", plural: "-", example: "Man muss stärker differenzieren.", tip: "" },
+      { de: "die Schlussfolgerung", en: "conclusion / deduction", plural: "Schlussfolgerungen", example: "Die Schlussfolgerung ist klar.", tip: "" },
+      { de: "das Phänomen", en: "phenomenon", plural: "Phänomene", example: "Das ist ein bekanntes Phänomen.", tip: "" },
+      { de: "inwieweit", en: "to what extent", plural: "-", example: "Inwieweit ist das relevant?", tip: "Key essay word" },
+      { de: "nichtsdestotrotz", en: "nevertheless / nonetheless", plural: "-", example: "Nichtsdestotrotz bleibt das Problem.", tip: "Very formal connector" },
+    ],
+  },
+];
+
+// ─── Lookup map ────────────────────────────────────────────────────────────────
+export const VOCAB_BY_LEVEL = { A1: A1_VOCAB, A2: A2_VOCAB, B1: B1_VOCAB, B2: B2_VOCAB, C1: C1_VOCAB };
