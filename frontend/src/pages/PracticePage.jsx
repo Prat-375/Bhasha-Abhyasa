@@ -1,68 +1,222 @@
 // PracticePage.jsx
-// Replaces the original PracticePage.
-//
-// Flow for A1:
-//   /practice/A1  →  Module grid  →  Topic list  →  Learn / Quiz / Fill
-//
-// All other levels (A2, B1 …) still hit the original API as before.
+// All level data imported from a single file — allPracticeData.js
+// Supports A1, A2, B1, B2 with quiz and fill-in-the-blank topics.
+// Other levels fall back to the original API.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router";
 import { getUser, getToken } from "../utils/auth";
-import { a1Modules } from "../data/a1Modules";
-import LearnTopic from "../components/a1/LearnTopic";
-import QuizTopic from "../components/a1/QuizTopic";
-import FillTopic from "../components/a1/FillTopic";
+import { PRACTICE_MODULES, PRACTICE_META } from "../data/allPracticeData";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
-
+// ─── Type labels ───────────────────────────────────────────────────────────────
 const TYPE_LABELS = { learn: "📖 Learn", quiz: "❓ Quiz", fill: "✏️ Fill" };
 const TYPE_COLORS = { learn: "tag-learn", quiz: "tag-quiz", fill: "tag-fill" };
 
-// ─── sub-views ──────────────────────────────────────────────────────────────
+// ─── Quiz Topic ────────────────────────────────────────────────────────────────
+function QuizTopic({ topic, onComplete }) {
+  const [selected, setSelected]   = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore]         = useState(null);
 
-function TopicView({ module, topic, onBack, onComplete }) {
-  const handleComplete = (correct, total) => {
-    onComplete(topic.id, correct, total);
+  const handleSelect = (qi, oi) => {
+    if (submitted) return;
+    setSelected((p) => ({ ...p, [qi]: oi }));
   };
 
+  const handleSubmit = () => {
+    if (Object.keys(selected).length < topic.questions.length) {
+      alert("Please answer all questions before submitting.");
+      return;
+    }
+    let correct = 0;
+    topic.questions.forEach((q, i) => { if (selected[i] === q.answer) correct++; });
+    setScore(correct);
+    setSubmitted(true);
+  };
+
+  const handleRetry = () => { setSelected({}); setSubmitted(false); setScore(null); };
+
+  const allAnswered = Object.keys(selected).length === topic.questions.length;
+  const pct    = score !== null ? Math.round((score / topic.questions.length) * 100) : 0;
+  const passed = pct >= 60;
+
   return (
-    <div className="topic-view">
-      <button className="back-btn" onClick={onBack}>
-        ← Back to {module.title}
-      </button>
+    <div className="topic-container">
+      {topic.questions.map((q, qi) => (
+        <div key={qi} className="question-card">
+          <h3 className="question-text">
+            <span className="question-number">Q{qi + 1}.</span> {q.question}
+          </h3>
+          <div className="options-grid">
+            {q.options.map((opt, oi) => {
+              let cls = "option-btn";
+              if (submitted) {
+                if (oi === q.answer) cls += " correct";
+                else if (selected[qi] === oi) cls += " wrong";
+              } else if (selected[qi] === oi) cls += " selected";
+              return (
+                <button key={oi} className={cls} onClick={() => handleSelect(qi, oi)}>
+                  <span className="option-letter">{["A","B","C","D"][oi]}</span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+          {submitted && (
+            <p className={`answer-feedback ${selected[qi] === q.answer ? "feedback-correct" : "feedback-wrong"}`}>
+              {selected[qi] === q.answer ? "✓ Correct!" : `✗ Correct answer: "${q.options[q.answer]}"`}
+            </p>
+          )}
+        </div>
+      ))}
 
-      <div className="topic-header">
-        <span className={`topic-tag ${TYPE_COLORS[topic.type]}`}>
-          {TYPE_LABELS[topic.type]}
-        </span>
-        <h2>{topic.title}</h2>
-      </div>
-
-      {topic.type === "learn" && (
-        <LearnTopic topic={topic} onComplete={() => handleComplete(1, 1)} />
-      )}
-      {topic.type === "quiz" && (
-        <QuizTopic topic={topic} onComplete={handleComplete} />
-      )}
-      {topic.type === "fill" && (
-        <FillTopic topic={topic} onComplete={handleComplete} />
+      {!submitted ? (
+        <button
+          className={`primary-btn ${!allAnswered ? "btn-disabled" : ""}`}
+          onClick={handleSubmit}
+          disabled={!allAnswered}
+        >
+          Submit answers
+        </button>
+      ) : (
+        <div className="result-box">
+          <div className={`result-score ${passed ? "result-pass" : "result-fail"}`}>
+            {score} / {topic.questions.length}
+          </div>
+          <p className="result-percent">{pct}% — {passed ? "Well done! 🎉" : "Keep practising! 💪"}</p>
+          <div className="result-actions">
+            <button className="secondary-btn" onClick={handleRetry}>Try again</button>
+            {passed && (
+              <button className="primary-btn" onClick={() => onComplete(score, topic.questions.length)}>
+                Continue →
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-function ModuleView({ module, completedTopics, onSelectTopic, onBack }) {
+// ─── Fill Topic ────────────────────────────────────────────────────────────────
+function FillTopic({ topic, onComplete }) {
+  const [inputs, setInputs]       = useState(topic.sentences.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore]         = useState(null);
+  const [hints, setHints]         = useState({});
+
+  const handleChange = (i, v) => { if (!submitted) setInputs((p) => ({ ...p, [i]: v })); };
+  const toggleHint   = (i) => setHints((p) => ({ ...p, [i]: !p[i] }));
+
+  const handleSubmit = () => {
+    if (topic.sentences.some((_, i) => !inputs[i].trim())) {
+      alert("Please fill in all blanks before submitting.");
+      return;
+    }
+    let correct = 0;
+    topic.sentences.forEach((s, i) => {
+      if (inputs[i].trim().toLowerCase() === s.blank.toLowerCase()) correct++;
+    });
+    setScore(correct);
+    setSubmitted(true);
+  };
+
+  const handleRetry = () => {
+    setInputs(topic.sentences.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+    setSubmitted(false); setScore(null); setHints({});
+  };
+
+  const allFilled = topic.sentences.every((_, i) => inputs[i].trim());
+  const pct    = score !== null ? Math.round((score / topic.sentences.length) * 100) : 0;
+  const passed = pct >= 60;
+
+  return (
+    <div className="topic-container">
+      <p className="topic-intro">Type the missing German word into each blank.</p>
+
+      {topic.sentences.map((s, i) => {
+        const isCorrect = submitted && inputs[i].trim().toLowerCase() === s.blank.toLowerCase();
+        const isWrong   = submitted && !isCorrect;
+        return (
+          <div key={i} className={`fill-card ${submitted ? (isCorrect ? "fill-correct" : "fill-wrong") : ""}`}>
+            <div className="fill-sentence">
+              <span className="fill-text">{s.before}</span>
+              <input
+                type="text"
+                className={`fill-input ${submitted ? (isCorrect ? "input-correct" : "input-wrong") : ""}`}
+                value={inputs[i]}
+                onChange={(e) => handleChange(i, e.target.value)}
+                placeholder="___"
+                disabled={submitted}
+              />
+              <span className="fill-text">{s.after}</span>
+            </div>
+            <div className="fill-meta">
+              {!submitted && (
+                <button className="hint-btn" onClick={() => toggleHint(i)}>
+                  {hints[i] ? "Hide hint" : "Show hint"}
+                </button>
+              )}
+              {hints[i] && !submitted && <span className="hint-text">💡 {s.hint}</span>}
+              {submitted && isWrong    && <span className="correct-answer">✗ Answer: <strong>{s.blank}</strong></span>}
+              {submitted && isCorrect  && <span className="correct-label">✓ Correct!</span>}
+            </div>
+          </div>
+        );
+      })}
+
+      {!submitted ? (
+        <button
+          className={`primary-btn ${!allFilled ? "btn-disabled" : ""}`}
+          onClick={handleSubmit}
+          disabled={!allFilled}
+        >
+          Check answers
+        </button>
+      ) : (
+        <div className="result-box">
+          <div className={`result-score ${passed ? "result-pass" : "result-fail"}`}>
+            {score} / {topic.sentences.length}
+          </div>
+          <p className="result-percent">{pct}% — {passed ? "Great work! 🎉" : "Keep going! 💪"}</p>
+          <div className="result-actions">
+            <button className="secondary-btn" onClick={handleRetry}>Try again</button>
+            {passed && (
+              <button className="primary-btn" onClick={() => onComplete(score, topic.sentences.length)}>
+                Continue →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Topic view ────────────────────────────────────────────────────────────────
+function TopicView({ module, topic, onBack, onComplete }) {
+  return (
+    <div className="topic-view">
+      <button className="back-btn" onClick={onBack}>← Back to {module.title}</button>
+      <div className="topic-header">
+        <span className={`topic-tag ${TYPE_COLORS[topic.type]}`}>{TYPE_LABELS[topic.type]}</span>
+        <h2>{topic.title}</h2>
+      </div>
+      {topic.type === "quiz" && <QuizTopic topic={topic} onComplete={(c, t) => onComplete(topic.id, c, t)} />}
+      {topic.type === "fill" && <FillTopic topic={topic} onComplete={(c, t) => onComplete(topic.id, c, t)} />}
+    </div>
+  );
+}
+
+// ─── Module view ───────────────────────────────────────────────────────────────
+function ModuleView({ module, completedTopics, levelColor, onSelectTopic, onBack }) {
   const total = module.topics.length;
-  const done = module.topics.filter((t) => completedTopics[t.id]).length;
-  const progress = Math.round((done / total) * 100);
+  const done  = module.topics.filter((t) => completedTopics[t.id]).length;
+  const pct   = Math.round((done / total) * 100);
 
   return (
     <div className="module-view">
-      <button className="back-btn" onClick={onBack}>
-        ← Back to modules
-      </button>
-
+      <button className="back-btn" onClick={onBack}>← Back to modules</button>
       <div className="module-view-header">
         <span className="module-icon-large">{module.icon}</span>
         <div>
@@ -70,14 +224,12 @@ function ModuleView({ module, completedTopics, onSelectTopic, onBack }) {
           <p className="module-subtitle">{module.subtitle}</p>
         </div>
       </div>
-
       <div className="progress-bar-wrap">
         <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
+          <div className="progress-fill" style={{ width: `${pct}%`, background: levelColor }} />
         </div>
         <span className="progress-label">{done} / {total} completed</span>
       </div>
-
       <div className="topics-list">
         {module.topics.map((topic) => {
           const isDone = !!completedTopics[topic.id];
@@ -87,9 +239,7 @@ function ModuleView({ module, completedTopics, onSelectTopic, onBack }) {
               className={`topic-row ${isDone ? "topic-done" : ""}`}
               onClick={() => onSelectTopic(topic)}
             >
-              <span className={`topic-tag ${TYPE_COLORS[topic.type]}`}>
-                {TYPE_LABELS[topic.type]}
-              </span>
+              <span className={`topic-tag ${TYPE_COLORS[topic.type]}`}>{TYPE_LABELS[topic.type]}</span>
               <span className="topic-row-title">{topic.title}</span>
               {isDone && <span className="done-badge">✓</span>}
             </button>
@@ -100,32 +250,50 @@ function ModuleView({ module, completedTopics, onSelectTopic, onBack }) {
   );
 }
 
-function A1ModuleGrid({ completedTopics, onSelectModule }) {
+// ─── Practice grid ─────────────────────────────────────────────────────────────
+function PracticeGrid({ modules, completedTopics, meta, onSelectModule }) {
+  const totalTopics = modules.reduce((s, m) => s + m.topics.length, 0);
+  const doneTopics  = modules.reduce((s, m) => s + m.topics.filter((t) => completedTopics[t.id]).length, 0);
+  const pct = Math.round((doneTopics / totalTopics) * 100);
+
   return (
     <div className="a1-grid-view">
       <div className="level-header">
-        <h1>A1 — Beginner German</h1>
-        <p>Choose a module to start learning.</p>
+        <p className="eyebrow">Practice Mode</p>
+        <h1 style={{ color: meta.color }}>{meta.label}</h1>
+        <p>{meta.sub}</p>
+      </div>
+
+      <div className="practice-overview-bar">
+        <div className="pob-stat">
+          <span className="pob-val">{doneTopics}</span>
+          <span className="pob-label">Completed</span>
+        </div>
+        <div className="pob-progress">
+          <div className="pob-track">
+            <div className="pob-fill" style={{ width: `${pct}%`, background: meta.color }} />
+          </div>
+          <span className="pob-pct">{pct}% done</span>
+        </div>
+        <div className="pob-stat">
+          <span className="pob-val">{totalTopics - doneTopics}</span>
+          <span className="pob-label">Remaining</span>
+        </div>
       </div>
 
       <div className="modules-grid">
-        {a1Modules.map((mod) => {
-          const total = mod.topics.length;
-          const done = mod.topics.filter((t) => completedTopics[t.id]).length;
-          const pct = Math.round((done / total) * 100);
-
+        {modules.map((mod) => {
+          const total  = mod.topics.length;
+          const done   = mod.topics.filter((t) => completedTopics[t.id]).length;
+          const modPct = Math.round((done / total) * 100);
           return (
-            <button
-              key={mod.id}
-              className="module-card"
-              onClick={() => onSelectModule(mod)}
-            >
+            <button key={mod.id} className="module-card" onClick={() => onSelectModule(mod)}>
               <span className="module-icon">{mod.icon}</span>
               <div className="module-card-body">
                 <h3>{mod.title}</h3>
                 <p>{mod.subtitle}</p>
                 <div className="card-progress-bar">
-                  <div className="card-progress-fill" style={{ width: `${pct}%` }} />
+                  <div className="card-progress-fill" style={{ width: `${modPct}%`, background: meta.color }} />
                 </div>
                 <span className="card-progress-label">{done}/{total} topics</span>
               </div>
@@ -137,71 +305,51 @@ function A1ModuleGrid({ completedTopics, onSelectModule }) {
   );
 }
 
-// ─── legacy API-backed view (A2, B1, …) ─────────────────────────────────────
-
+// ─── Legacy API (unrecognised levels) ──────────────────────────────────────────
 function LegacyPractice({ level }) {
   const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
-
-  const user = getUser();
+  const [answers,   setAnswers]   = useState({});
+  const [loading,   setLoading]   = useState(true);
+  const [result,    setResult]    = useState(null);
+  const [error,     setError]     = useState("");
+  const user  = getUser();
   const token = getToken();
 
-  useEffect(() => {
-    fetch(
-      `${import.meta.env.VITE_API_URL}/api/practice-questions?level=${level}&type=multiple-choice`
-    )
-      .then((res) => res.json())
-      .then((data) => { setQuestions(data); setLoading(false); })
-      .catch((err) => { console.error(err); setError("Failed to load practice questions."); setLoading(false); });
+  useState(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/api/practice-questions?level=${level}&type=multiple-choice`)
+      .then((r) => r.json())
+      .then((d) => { setQuestions(d); setLoading(false); })
+      .catch(() => { setError("Failed to load practice questions."); setLoading(false); });
   }, [level]);
 
-  const handleSelect = (questionId, optionText) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionText }));
-  };
+  const handleSelect = (qId, text) => setAnswers((p) => ({ ...p, [qId]: text }));
 
   const handleSubmit = async () => {
     if (!user) { alert("Please login first"); return; }
-    if (questions.length === 0) return;
-
+    if (!questions.length) return;
     let correct = 0;
     questions.forEach((q) => {
-      const correctOption = q.options.find((opt) => opt.isCorrect);
-      if (answers[q._id] === correctOption?.text) correct++;
+      if (answers[q._id] === q.options.find((o) => o.isCorrect)?.text) correct++;
     });
-
     const total = questions.length;
-    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const score = total ? Math.round((correct / total) * 100) : 0;
     setResult({ correct, total, score });
-
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/api/progress/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          level,
-          theme: questions[0]?.theme?._id,
-          type: "multiple-choice",
-          totalQuestions: total,
-          correctAnswers: correct,
-        }),
+        body: JSON.stringify({ level, theme: questions[0]?.theme?._id, type: "multiple-choice", totalQuestions: total, correctAnswers: correct }),
       });
-    } catch (err) {
-      console.error("Failed to save progress:", err);
-    }
+    } catch (e) { console.error(e); }
   };
 
   if (loading) return <p>Loading questions...</p>;
-  if (error) return <p>{error}</p>;
+  if (error)   return <p>{error}</p>;
 
   return (
     <section className="content-section">
       <h1>{level} Practice</h1>
-      {questions.length === 0 ? (
-        <p>No practice questions found for this level yet.</p>
-      ) : (
+      {questions.length === 0 ? <p>No practice questions found for this level yet.</p> : (
         <>
           {questions.map((q) => (
             <div key={q._id} className="question-card">
@@ -211,9 +359,7 @@ function LegacyPractice({ level }) {
                   key={opt.text}
                   className={`option-btn ${answers[q._id] === opt.text ? "selected" : ""}`}
                   onClick={() => handleSelect(q._id, opt.text)}
-                >
-                  {opt.text}
-                </button>
+                >{opt.text}</button>
               ))}
             </div>
           ))}
@@ -231,67 +377,52 @@ function LegacyPractice({ level }) {
   );
 }
 
-// ─── main component ──────────────────────────────────────────────────────────
-
+// ─── Main ──────────────────────────────────────────────────────────────────────
 function PracticePage() {
   const { level } = useParams();
+  const storageKey = `bhasha_practice_${level}`;
 
-  // Navigation state for A1 flow
-  const [selectedModule, setSelectedModule] = useState(null);
-  const [selectedTopic, setSelectedTopic] = useState(null);
+  const modules = PRACTICE_MODULES[level];
+  const meta    = PRACTICE_META[level];
 
-  // Persist completed topics in localStorage so progress survives page refresh
-  const storageKey = `bhasha_completed_${level}`;
   const [completedTopics, setCompletedTopics] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(storageKey) || "{}");
-    } catch {
-      return {};
-    }
+    try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch { return {}; }
   });
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedTopic,  setSelectedTopic]  = useState(null);
 
   const markComplete = (topicId, correct, total) => {
     const updated = { ...completedTopics, [topicId]: { correct, total, completedAt: Date.now() } };
     setCompletedTopics(updated);
     localStorage.setItem(storageKey, JSON.stringify(updated));
-
-    // Auto-advance to next topic in the module
     if (selectedModule) {
-      const currentIndex = selectedModule.topics.findIndex((t) => t.id === topicId);
-      const nextTopic = selectedModule.topics[currentIndex + 1];
-      if (nextTopic) {
-        setSelectedTopic(nextTopic);
-      } else {
-        // All topics done — go back to module view
-        setSelectedTopic(null);
-      }
+      const idx  = selectedModule.topics.findIndex((t) => t.id === topicId);
+      const next = selectedModule.topics[idx + 1];
+      setSelectedTopic(next || null);
     }
   };
 
-  // Non-A1 levels use the old API flow
-  if (level !== "A1") {
-    return <LegacyPractice level={level} />;
-  }
+  if (!modules) return <LegacyPractice level={level} />;
 
-  // A1 three-level navigation: grid → module → topic
   return (
     <section className="content-section">
       {!selectedModule && (
-        <A1ModuleGrid
+        <PracticeGrid
+          modules={modules}
           completedTopics={completedTopics}
+          meta={meta}
           onSelectModule={setSelectedModule}
         />
       )}
-
       {selectedModule && !selectedTopic && (
         <ModuleView
           module={selectedModule}
           completedTopics={completedTopics}
+          levelColor={meta.color}
           onSelectTopic={setSelectedTopic}
           onBack={() => setSelectedModule(null)}
         />
       )}
-
       {selectedModule && selectedTopic && (
         <TopicView
           module={selectedModule}
