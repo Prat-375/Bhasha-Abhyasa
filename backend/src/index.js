@@ -9,6 +9,10 @@ import practiceQuestionRoutes from "./routes/practiceQuestionRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 
+import vocabRoutes from "./routes/vocabRoutes.js";
+import grammarRoutes from "./routes/grammarRoutes.js";
+import practiceSkillRoutes from "./routes/practiceSkillRoutes.js";
+
 
 dotenv.config();
 
@@ -49,6 +53,9 @@ app.use("/api/levels", levelRoutes);
 app.use("/api/themes", themeRoutes);
 app.use("/api/practice-questions", practiceQuestionRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/api/vocab", vocabRoutes);
+app.use("/api/grammar", grammarRoutes);
+app.use("/api/practice-skills", practiceSkillRoutes);
 
 
 const PORT = process.env.PORT || 5000;

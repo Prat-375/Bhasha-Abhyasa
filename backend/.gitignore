@@ -1,2 +1,6 @@
 node_modules/
 .env
+src/scripts/seedContent.js
+src/data/vocabData.js
+src/data/grammarData.js
+src/data/practiceSkillsData.js

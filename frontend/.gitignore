@@ -23,3 +23,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+src/data/vocabData.js
+src/data/grammarData.js
+src/data/practiceSkillsData.js
+src/data/allLevelModules.js
+src/data/allPracticeData.js
+src/data/higherLevelModules.js
+src/data/practiceData.js

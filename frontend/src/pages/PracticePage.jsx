@@ -4,7 +4,6 @@
 
 import { useState } from "react";
 import { useParams } from "react-router";
-import { PRACTICE_SKILLS_BY_LEVEL } from "../data/practiceSkillsData";
 
 const LEVEL_COLORS = {
   A1: "#a78bfa", A2: "#34d399", B1: "#f472b6", B2: "#fbbf24", C1: "#38bdf8",
