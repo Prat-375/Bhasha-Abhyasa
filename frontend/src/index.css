@@ -3017,3 +3017,699 @@ p { color: var(--text-soft); }
 }
 
 .model-answer-section { display: flex; flex-direction: column; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PRACTICE PAGE — Quiz Components
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Progress bar ───────────────────────────────────────────── */
+.quiz-progress {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.qp-track {
+  flex: 1; height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px; overflow: hidden;
+}
+.qp-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.qp-label {
+  font-size: 0.8rem; color: var(--muted);
+  white-space: nowrap; font-weight: 600;
+}
+
+/* ── Question card ──────────────────────────────────────────── */
+.question-card-wrap { max-width: 680px; }
+
+.qcard {
+  background: var(--bg-soft);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+
+.qcard-top {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 0.5rem;
+}
+
+.qcard-badge {
+  font-size: 0.75rem; font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px; letter-spacing: 0.04em;
+}
+
+.qcard-count { font-size: 0.8rem; color: var(--muted); }
+
+.qcard-question {
+  font-size: 1.05rem; font-weight: 600;
+  color: var(--text); line-height: 1.6;
+  white-space: pre-line; margin: 0;
+}
+
+/* ── Options ────────────────────────────────────────────────── */
+.qcard-options {
+  display: flex; flex-direction: column; gap: 0.6rem;
+}
+
+.qcard-opt {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: rgba(255,255,255,0.03);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  font-size: 0.95rem; color: var(--text-soft);
+  cursor: pointer; text-align: left;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.qcard-opt:hover:not(.qopt-correct):not(.qopt-wrong):not(.qopt-dim) {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.07);
+  color: var(--text);
+  transform: translateX(3px);
+}
+
+.qopt-selected {
+  border-color: var(--accent);
+  background: rgba(157,114,255,0.12);
+  color: #e9d5ff;
+}
+
+.qopt-correct {
+  border-color: #34d399 !important;
+  background: rgba(52,211,153,0.1) !important;
+  color: #6ee7b7 !important;
+}
+
+.qopt-wrong {
+  border-color: #f87171 !important;
+  background: rgba(248,113,113,0.1) !important;
+  color: #fca5a5 !important;
+}
+
+.qopt-dim {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.qopt-letter {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.08);
+  color: var(--muted);
+  font-size: 0.75rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.qopt-text { flex: 1; }
+
+.qopt-tick {
+  color: #34d399; font-weight: 900;
+  margin-left: auto; flex-shrink: 0;
+}
+.qopt-cross {
+  color: #f87171; font-weight: 900;
+  margin-left: auto; flex-shrink: 0;
+}
+
+/* ── Explanation ────────────────────────────────────────────── */
+.qcard-explanation {
+  display: flex; align-items: flex-start; gap: 0.65rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem; line-height: 1.65;
+  border-left: 3px solid;
+  animation: fadeSlideIn 0.25s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.exp-correct {
+  background: rgba(52,211,153,0.08);
+  border-color: #34d399;
+  color: #a7f3d0;
+}
+.exp-wrong {
+  background: rgba(167,139,250,0.08);
+  border-color: #a78bfa;
+  color: #c4b5fd;
+}
+
+.exp-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.exp-text { flex: 1; }
+
+/* ── Next button ────────────────────────────────────────────── */
+.qcard-next-btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.85rem 1.5rem;
+  font-size: 0.97rem; font-weight: 700;
+  color: #fff; cursor: pointer;
+  transition: opacity 0.18s, transform 0.12s;
+  align-self: flex-end;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.qcard-next-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+/* ── Result screen ──────────────────────────────────────────── */
+.result-screen {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 1.5rem;
+  max-width: 480px; margin: 0 auto;
+  padding: 2rem 0;
+  text-align: center;
+  animation: fadeSlideIn 0.35s ease;
+}
+
+.rs-circle-wrap {
+  position: relative;
+  width: 140px; height: 140px;
+}
+
+.rs-circle-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+.rs-pct {
+  font-size: 2rem; font-weight: 900; line-height: 1;
+}
+.rs-fraction {
+  font-size: 0.8rem; color: var(--muted);
+}
+
+.rs-grade {
+  font-size: 1.5rem; font-weight: 800;
+  color: var(--text); margin: 0;
+}
+.rs-sub {
+  color: var(--muted); font-size: 0.95rem; margin: 0;
+}
+
+.rs-breakdown {
+  display: flex; gap: 1.5rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.75rem;
+}
+
+.rs-stat {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.2rem;
+}
+.rs-stat-num {
+  font-size: 1.8rem; font-weight: 900; color: var(--text);
+}
+.rs-stat-label {
+  font-size: 0.72rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.rs-stat-correct .rs-stat-num { color: #34d399; }
+.rs-stat-wrong   .rs-stat-num { color: #f87171; }
+
+.rs-actions { display: flex; gap: 0.85rem; flex-wrap: wrap; justify-content: center; }
+
+.rs-btn {
+  border-radius: var(--radius);
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all 0.18s;
+}
+.rs-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+.rs-btn-secondary {
+  background: var(--bg-soft);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+}
+.rs-btn-primary {
+  border: none; color: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+/* ── Quiz setup ─────────────────────────────────────────────── */
+.quiz-setup {
+  background: var(--bg-soft);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  max-width: 680px;
+}
+
+.qs-title {
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--text); margin: 0;
+}
+
+.qs-section { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.qs-label {
+  font-size: 0.8rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.qs-options {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+}
+
+.qs-chip {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  font-size: 0.87rem; color: var(--text-soft);
+  cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.qs-chip:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+.qs-chip-active { font-weight: 700; }
+
+.qs-count-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.qs-count-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1.25rem;
+  font-size: 1rem; font-weight: 700;
+  color: var(--muted); cursor: pointer;
+  transition: all 0.15s; min-width: 56px;
+}
+.qs-count-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+.qs-count-active { font-weight: 800; }
+
+.qs-start-btn {
+  border: none; border-radius: var(--radius);
+  padding: 0.95rem 2rem;
+  font-size: 1rem; font-weight: 700;
+  color: #fff; cursor: pointer;
+  align-self: flex-start;
+  transition: opacity 0.18s, transform 0.12s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.qs-start-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+/* ── Tab content header ──────────────────────────────────────── */
+.tab-content { display: flex; flex-direction: column; gap: 1.5rem; max-width: 680px; }
+
+.tc-header {
+  display: flex; align-items: center; gap: 1rem;
+}
+.tc-icon { font-size: 2.5rem; }
+.tc-title {
+  font-size: 1.4rem; font-weight: 800; color: var(--text); margin: 0 0 0.2rem;
+}
+.tc-sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+
+/* ── Loading / error states ──────────────────────────────────── */
+.quiz-loading {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 1rem;
+  padding: 3rem 0; color: var(--muted);
+}
+
+.ql-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.quiz-error { color: var(--danger); padding: 1rem 0; }
+
+
+/* ── Article quiz — der/die/das buttons ──────────────────────── */
+/* When all 3 options are der/die/das, make them big and coloured */
+.qcard-opt[data-article="der"] .qopt-letter { background: #3b82f6; color: #fff; }
+.qcard-opt[data-article="die"] .qopt-letter { background: #ec4899; color: #fff; }
+.qcard-opt[data-article="das"] .qopt-letter { background: #10b981; color: #fff; }
+
+/* Article question gets larger option text */
+.qcard-options.article-opts .qcard-opt {
+  padding: 1rem 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.qcard-options.article-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.qcard-options.article-opts .qopt-letter {
+  width: 32px; height: 32px;
+  font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOMEPAGE
+═══════════════════════════════════════════════════════════════ */
+
+.hp-section {
+  max-width: 100%;
+  padding-left: clamp(1rem, 4vw, 3rem);
+  padding-right: clamp(1rem, 4vw, 3rem);
+  box-sizing: border-box;
+}
+
+.hp-hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.hp-hero h1 {
+  font-size: clamp(1.8rem, 4.5vw, 3rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.hp-hero-sub {
+  opacity: 0.6;
+  font-weight: 400;
+}
+
+.hp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.hp-cards-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  min-width: 0;
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .hp-cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .hp-cards-grid { grid-template-columns: 1fr; }
+}
+
+.hp-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+}
+
+.hp-dot {
+  height: 8px;
+  border-radius: 99px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+  background: rgba(255,255,255,0.25);
+  width: 8px;
+}
+
+.hp-dot.active {
+  background: var(--accent, #9d72ff);
+  width: 24px;
+}
+
+/* Arrow button */
+.slider-arrow {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+  align-self: center;
+}
+.slider-arrow:hover {
+  background: rgba(255,255,255,0.25);
+  transform: scale(1.12);
+}
+
+/* Level card inner layout */
+.level-card-inner {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  padding: 1.4rem;
+  height: 340px;
+  box-sizing: border-box;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  position: relative;
+  gap: 0.75rem;
+}
+.level-card-inner:hover {
+  transform: scale(1.04);
+  z-index: 10;
+}
+
+.level-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.level-card-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.level-card-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.level-card-illus {
+  flex: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+/* Slide animations */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.slide-in-right { animation: slideInRight 0.35s ease; }
+.slide-in-left  { animation: slideInLeft  0.35s ease; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MODE PAGE
+═══════════════════════════════════════════════════════════════ */
+
+.mode-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2.5rem);
+}
+
+.mode-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.25rem;
+}
+
+.mode-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.mode-level-code {
+  font-size: clamp(2.8rem, 7vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.mode-level-divider {
+  border-left: 2px solid rgba(255,255,255,0.12);
+  padding-left: 1.25rem;
+}
+
+.mode-level-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.mode-level-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.2rem;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.back-pill:hover {
+  background: rgba(255,255,255,0.13);
+  color: #fff;
+}
+
+.mode-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.mode-card-link {
+  text-decoration: none;
+  display: block;
+}
+
+.mode-card-box {
+  background: var(--bg-soft);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  height: 300px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+}
+.mode-card-box:hover {
+  transform: translateY(-6px);
+}
+
+.mode-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 99px;
+  padding: 0.3rem 0.9rem;
+  margin-bottom: 0.65rem;
+}
+
+.mode-card-badge-text {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.mode-card-desc {
+  font-size: 0.87rem;
+  color: var(--text-soft);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.mode-card-illus {
+  flex: 1;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.15);
+  overflow: hidden;
+  padding: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE HERO — shared by LearnPage & PracticePage
+   Big level code on the left, title + subtitle on the right
+═══════════════════════════════════════════════════════════════ */
+
+.page-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.page-hero-level {
+  font-size: clamp(4rem, 12vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+}
+
+.page-hero-right {
+  border-left: 2px solid rgba(255,255,255,0.12);
+  padding-left: 1.5rem;
+}
+
+.page-hero-title {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0 0 0.4rem;
+  color: var(--text);
+}
+
+.page-hero-sub {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  color: var(--text-soft);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* page-hero-row — wraps hero + back button on same line */
+.page-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+}
+
+.page-hero-row .page-hero {
+  margin-bottom: 0;
+}

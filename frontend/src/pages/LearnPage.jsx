@@ -1,6 +1,6 @@
 // LearnPage.jsx — fetches vocab and grammar from API
 import { useState, useEffect } from "react";
-import { useParams } from "react-router";
+import { useParams, Link } from "react-router";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -9,6 +9,9 @@ const LEVEL_COLORS = {
 };
 const LEVEL_LABELS = {
   A1: "Beginner", A2: "Elementary", B1: "Intermediate", B2: "Upper Intermediate", C1: "Advanced",
+};
+const LEVEL_TITLES = {
+  A1: "Starter", A2: "Elementary", B1: "Intermediate", B2: "Advanced", C1: "Mastery",
 };
 
 // ─── useFetch hook ─────────────────────────────────────────────────────────────
@@ -332,15 +335,22 @@ function LearnPage() {
   const [sub, setSub]  = useState("vocabulary");
   const color  = LEVEL_COLORS[level] || "#a78bfa";
   const label  = LEVEL_LABELS[level] || level;
+  const title  = LEVEL_TITLES[level] || label;
 
   return (
     <section className="content-section">
-      <div className="learn-page-header">
-        <p className="eyebrow">Learn Mode</p>
-        <h1 style={{ color }}>
-          {level} <span style={{ color: "var(--text)", fontWeight: 400 }}>— {label}</span>
-        </h1>
-        <p className="section-text">Choose a section below to start learning.</p>
+
+      <div className="page-hero-row">
+        <div className="page-hero">
+          <div className="page-hero-level" style={{ color, textShadow: `0 0 60px ${color}50` }}>{level}</div>
+          <div className="page-hero-right">
+            <h1 className="page-hero-title">
+              <span style={{ color }}>{title}</span>
+            </h1>
+            <p className="page-hero-sub">Choose a section to start learning.</p>
+          </div>
+        </div>
+        <Link to={`/mode/${level}`} className="back-pill">← Back</Link>
       </div>
 
       <SubNav active={sub} onChange={setSub} color={color} />

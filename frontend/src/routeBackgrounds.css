@@ -1,0 +1,366 @@
+/* ═══════════════════════════════════════════════════════════════
+   routeBackgrounds.css — frontend/src/routeBackgrounds.css
+   One background style per SECTION TYPE, applied to every page
+   of that section regardless of level.
+
+   Sections:
+     home     → /
+     levels   → /levels
+     mode     → /mode/:level  (level selector)
+     learn    → /learn/:level
+     practice → /practice/:level
+     auth     → /login, /signup
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Smooth transition ───────────────────────────────────────── */
+body {
+  transition: background-color 0.5s ease;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+body[data-section]::before,
+body[data-section]::after {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
+   HOME — Dark Aurora
+   Deep navy with soft purple + cyan glow.
+   Welcoming, familiar, premium.
+═══════════════════════════════════════════ */
+body[data-section="home"],
+body[data-section="levels"] {
+  background-color: #0c0f1e;
+}
+body[data-section="home"]::before,
+body[data-section="levels"]::before {
+  background:
+    radial-gradient(ellipse at 18% 50%, rgba(139,92,246,0.22), transparent 55%),
+    radial-gradient(ellipse at 82% 18%, rgba(56,189,248,0.15), transparent 50%),
+    radial-gradient(ellipse at 55% 90%, rgba(167,139,250,0.08), transparent 45%);
+}
+
+/* ═══════════════════════════════════════════
+   MODE PAGE — Neon Tokyo
+   Pink + cyan glow on near-black.
+   Picks a level — exciting, choice-making.
+═══════════════════════════════════════════ */
+body[data-section="mode"] {
+  background-color: #0a0a0f;
+}
+body[data-section="mode"]::before {
+  background:
+    radial-gradient(ellipse at 15% 50%, rgba(244,114,182,0.2), transparent 45%),
+    radial-gradient(ellipse at 85% 50%, rgba(56,189,248,0.2),  transparent 45%),
+    radial-gradient(ellipse at 50% 90%, rgba(167,139,250,0.1), transparent 40%);
+}
+body[data-section="mode"]::after {
+  top: 0; left: 0; right: 0;
+  bottom: auto;
+  height: 2px;
+  background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8);
+  inset: unset;
+  position: fixed;
+}
+
+/* ═══════════════════════════════════════════
+   LEARN — Indigo Sunset
+   Deep purple fading to hot pink.
+   Study mode — focused, immersive, rich.
+═══════════════════════════════════════════ */
+body[data-section="learn"] {
+  background-color: #1a0533;
+}
+body[data-section="learn"]::before {
+  background: linear-gradient(
+    135deg,
+    #1a0533 0%,
+    #3b0764 40%,
+    #6d28d9 70%,
+    #db2777 100%
+  );
+}
+body[data-section="learn"]::after {
+  background:
+    radial-gradient(ellipse at 5%  80%, rgba(219,39,119,0.15), transparent 40%),
+    radial-gradient(ellipse at 95% 15%, rgba(109,40,217,0.12), transparent 35%);
+}
+
+/* ═══════════════════════════════════════════
+   PRACTICE — Ocean Deep
+   Midnight blue fading to electric cyan.
+   Quiz mode — sharp, alert, testing.
+═══════════════════════════════════════════ */
+body[data-section="practice"] {
+  background-color: #020617;
+}
+body[data-section="practice"]::before {
+  background: linear-gradient(
+    135deg,
+    #020617 0%,
+    #0c1445 40%,
+    #1e3a8a 70%,
+    #0891b2 100%
+  );
+}
+body[data-section="practice"]::after {
+  background:
+    radial-gradient(ellipse at 80% 85%, rgba(6,182,212,0.22),  transparent 50%),
+    radial-gradient(ellipse at 15% 15%, rgba(56,189,248,0.1),  transparent 40%);
+}
+
+/* ═══════════════════════════════════════════
+   AUTH — Subtle dark neutral
+   Login / Signup — clean, low distraction.
+═══════════════════════════════════════════ */
+body[data-section="auth"] {
+  background-color: #0a0a12;
+}
+body[data-section="auth"]::before {
+  background: radial-gradient(
+    ellipse at 50% 30%,
+    rgba(139,92,246,0.12),
+    transparent 55%
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION-AWARE TYPOGRAPHY & CARD COLOURS
+   CSS variables are overridden per section so all text, cards
+   and UI elements automatically adapt to each background theme.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── HOME / LEVELS — dark aurora (purple/cyan) ──────────────── */
+body[data-section="home"],
+body[data-section="levels"] {
+  --text:              #f0eeff;
+  --text-soft:         #c8c4e0;
+  --muted:             #8880a8;
+  --bg-soft:           rgba(255,255,255,0.055);
+  --bg-hover:          rgba(255,255,255,0.09);
+  --card-border:       rgba(255,255,255,0.10);
+  --card-border-hover: rgba(139,92,246,0.55);
+  --accent:            #9d72ff;
+  --accent-deep:       #6d3aee;
+}
+
+/* ── MODE — neon tokyo (pink/cyan on black) ─────────────────── */
+body[data-section="mode"] {
+  --text:              #fdf4ff;
+  --text-soft:         #f0abfc;
+  --muted:             #c084fc;
+  --bg-soft:           rgba(244,114,182,0.08);
+  --bg-hover:          rgba(244,114,182,0.13);
+  --card-border:       rgba(244,114,182,0.18);
+  --card-border-hover: rgba(244,114,182,0.55);
+  --accent:            #f472b6;
+  --accent-deep:       #db2777;
+  --accent-glow:       rgba(244,114,182,0.2);
+}
+
+/* ── LEARN — indigo sunset (deep purple → hot pink) ─────────── */
+body[data-section="learn"] {
+  --text:              #fdf2f8;
+  --text-soft:         #f9a8d4;
+  --muted:             #e879f9;
+  --bg-soft:           rgba(255,255,255,0.07);
+  --bg-hover:          rgba(255,255,255,0.12);
+  --card-border:       rgba(255,255,255,0.13);
+  --card-border-hover: rgba(251,113,133,0.6);
+  --accent:            #fb7185;
+  --accent-deep:       #e11d48;
+  --accent-glow:       rgba(251,113,133,0.2);
+}
+
+/* ── PRACTICE — ocean deep (navy → cyan) ───────────────────── */
+body[data-section="practice"] {
+  --text:              #ecfeff;
+  --text-soft:         #a5f3fc;
+  --muted:             #67e8f9;
+  --bg-soft:           rgba(6,182,212,0.07);
+  --bg-hover:          rgba(6,182,212,0.13);
+  --card-border:       rgba(56,189,248,0.15);
+  --card-border-hover: rgba(56,189,248,0.55);
+  --accent:            #38bdf8;
+  --accent-deep:       #0284c7;
+  --accent-glow:       rgba(56,189,248,0.2);
+}
+
+/* ── AUTH — dark neutral ────────────────────────────────────── */
+body[data-section="auth"] {
+  --text:              #f0eeff;
+  --text-soft:         #c8c4e0;
+  --muted:             #8880a8;
+  --bg-soft:           rgba(255,255,255,0.055);
+  --bg-hover:          rgba(255,255,255,0.09);
+  --card-border:       rgba(255,255,255,0.10);
+  --card-border-hover: rgba(139,92,246,0.55);
+  --accent:            #9d72ff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HOMEPAGE LEVEL CARDS — each level card gets its own vibrant
+   gradient so they stand out against the dark aurora background
+═══════════════════════════════════════════════════════════════ */
+
+/* Base level card styles that work across themes */
+.level-card {
+  position: relative;
+  overflow: hidden;
+  border: 1.5px solid transparent !important;
+  background-clip: padding-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.level-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.level-card:hover {
+  transform: translateY(-5px);
+}
+
+.level-card:hover::after {
+  opacity: 1;
+}
+
+/* A1 — Solar Flare card */
+.level-card[data-level="A1"],
+.level-card.level-a1 {
+  background: linear-gradient(135deg, #1c0a00 0%, #7c2d12 50%, #c2410c 80%, #f59e0b 100%) !important;
+  border-color: rgba(245,158,11,0.4) !important;
+  box-shadow: 0 8px 32px rgba(194,65,12,0.35) !important;
+}
+.level-card[data-level="A1"]::after,
+.level-card.level-a1::after {
+  background: radial-gradient(circle at 80% 20%, rgba(251,191,36,0.15), transparent 50%);
+}
+.level-card[data-level="A1"]:hover,
+.level-card.level-a1:hover {
+  box-shadow: 0 16px 48px rgba(194,65,12,0.5) !important;
+  border-color: rgba(251,191,36,0.7) !important;
+}
+
+/* A2 — Jungle Green card */
+.level-card[data-level="A2"],
+.level-card.level-a2 {
+  background: linear-gradient(135deg, #022c22 0%, #064e3b 45%, #065f46 75%, #0d9488 100%) !important;
+  border-color: rgba(13,148,136,0.4) !important;
+  box-shadow: 0 8px 32px rgba(6,78,59,0.45) !important;
+}
+.level-card[data-level="A2"]::after,
+.level-card.level-a2::after {
+  background: radial-gradient(circle at 20% 80%, rgba(16,185,129,0.18), transparent 50%);
+}
+.level-card[data-level="A2"]:hover,
+.level-card.level-a2:hover {
+  box-shadow: 0 16px 48px rgba(6,78,59,0.6) !important;
+  border-color: rgba(16,185,129,0.7) !important;
+}
+
+/* B1 — Ocean Deep card */
+.level-card[data-level="B1"],
+.level-card.level-b1 {
+  background: linear-gradient(135deg, #020617 0%, #0c1445 40%, #1e3a8a 70%, #0891b2 100%) !important;
+  border-color: rgba(8,145,178,0.4) !important;
+  box-shadow: 0 8px 32px rgba(30,58,138,0.45) !important;
+}
+.level-card[data-level="B1"]::after,
+.level-card.level-b1::after {
+  background: radial-gradient(circle at 80% 80%, rgba(6,182,212,0.2), transparent 50%);
+}
+.level-card[data-level="B1"]:hover,
+.level-card.level-b1:hover {
+  box-shadow: 0 16px 48px rgba(8,145,178,0.55) !important;
+  border-color: rgba(56,189,248,0.7) !important;
+}
+
+/* B2 — Indigo Sunset card */
+.level-card[data-level="B2"],
+.level-card.level-b2 {
+  background: linear-gradient(135deg, #1a0533 0%, #3b0764 40%, #6d28d9 70%, #db2777 100%) !important;
+  border-color: rgba(109,40,217,0.4) !important;
+  box-shadow: 0 8px 32px rgba(59,7,100,0.5) !important;
+}
+.level-card[data-level="B2"]::after,
+.level-card.level-b2::after {
+  background: radial-gradient(circle at 15% 85%, rgba(219,39,119,0.18), transparent 50%);
+}
+.level-card[data-level="B2"]:hover,
+.level-card.level-b2:hover {
+  box-shadow: 0 16px 48px rgba(219,39,119,0.5) !important;
+  border-color: rgba(244,114,182,0.7) !important;
+}
+
+/* C1 — Cosmic Latte card */
+.level-card[data-level="C1"],
+.level-card.level-c1 {
+  background:
+    radial-gradient(ellipse at 30% 50%, rgba(124,58,237,0.7), transparent 60%),
+    radial-gradient(ellipse at 75% 30%, rgba(245,158,11,0.4), transparent 50%),
+    #08001a !important;
+  border-color: rgba(124,58,237,0.45) !important;
+  box-shadow: 0 8px 32px rgba(8,0,26,0.6) !important;
+}
+.level-card[data-level="C1"]::after,
+.level-card.level-c1::after {
+  background: radial-gradient(circle at 70% 70%, rgba(239,68,68,0.15), transparent 50%);
+}
+.level-card[data-level="C1"]:hover,
+.level-card.level-c1:hover {
+  box-shadow: 0 16px 48px rgba(124,58,237,0.55) !important;
+  border-color: rgba(167,139,250,0.7) !important;
+}
+
+/* ── Level badge text stays white/bright on all card colours ── */
+.level-card .level-badge {
+  background: rgba(255,255,255,0.15) !important;
+  border-color: rgba(255,255,255,0.3) !important;
+  color: #fff !important;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* ── Card title/text on coloured cards ──────────────────────── */
+.level-card h2,
+.level-card h3,
+.level-card .card-title {
+  color: #fff !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.level-card p,
+.level-card .card-sub,
+.level-card .section-text {
+  color: rgba(255,255,255,0.82) !important;
+}
+
+.level-card .primary-btn {
+  background: rgba(255,255,255,0.18) !important;
+  border: 1px solid rgba(255,255,255,0.35) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(4px);
+}
+
+.level-card .primary-btn:hover {
+  background: rgba(255,255,255,0.28) !important;
+  transform: translateY(-2px);
+}

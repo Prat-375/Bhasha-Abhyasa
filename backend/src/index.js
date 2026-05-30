@@ -11,7 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 
 import vocabRoutes from "./routes/vocabRoutes.js";
 import grammarRoutes from "./routes/grammarRoutes.js";
-import practiceSkillRoutes from "./routes/practiceSkillRoutes.js";
+import quizRoutes          from "./routes/quizRoutes.js";
 
 
 dotenv.config();
@@ -55,7 +55,7 @@ app.use("/api/practice-questions", practiceQuestionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/vocab", vocabRoutes);
 app.use("/api/grammar", grammarRoutes);
-app.use("/api/practice-skills", practiceSkillRoutes);
+app.use("/api/quiz", quizRoutes);
 
 
 const PORT = process.env.PORT || 5000;
