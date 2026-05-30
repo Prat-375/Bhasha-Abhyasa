@@ -3713,3 +3713,226 @@ p { color: var(--text-soft); }
 .page-hero-row .page-hero {
   margin-bottom: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH MODAL
+═══════════════════════════════════════════════════════════════ */
+
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+.auth-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  background: var(--bg-soft, #1a1a2e);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  width: min(420px, 90vw);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.92); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.auth-modal-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.auth-modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text, #fff);
+  margin: 0;
+}
+
+.auth-modal-sub {
+  font-size: 0.92rem;
+  color: var(--muted, #8880a8);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 320px;
+}
+
+.auth-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.auth-modal-btn {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: var(--radius, 10px);
+  font-size: 0.97rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.18s, transform 0.12s;
+  border: none;
+}
+
+.auth-modal-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-2px);
+}
+
+.auth-modal-btn-primary {
+  background: var(--accent, #9d72ff);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(157, 114, 255, 0.35);
+}
+
+.auth-modal-btn-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text, #fff);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--muted, #8880a8);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.auth-modal-close:hover {
+  color: var(--text, #fff);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Success message on login page after signup */
+.auth-success-msg {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #6ee7b7;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius, 10px);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ── Select dropdown options — force dark theme ─────────────── */
+.auth-input option {
+  background: #1a1a2e;
+  color: #f0eeff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FORGOT PASSWORD FLOW
+═══════════════════════════════════════════════════════════════ */
+
+/* Auth icon above card title */
+.auth-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+/* Login page bottom row — two items side by side */
+.auth-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+.auth-footer-row .section-text { margin: 0; }
+
+/* OTP digit boxes */
+.otp-row {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+
+.otp-box {
+  width: 52px;
+  height: 60px;
+  border-radius: 12px;
+  border: 2px solid var(--card-border, rgba(255,255,255,0.12));
+  background: var(--bg-soft, rgba(255,255,255,0.05));
+  color: var(--text, #fff);
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+  caret-color: var(--accent, #9d72ff);
+}
+
+.otp-box:focus {
+  border-color: var(--accent, #9d72ff);
+  box-shadow: 0 0 0 3px rgba(157,114,255,0.18);
+}
+
+/* Password field with show/hide toggle */
+.password-field-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  width: 100%;
+  padding-right: 3rem !important;
+  box-sizing: border-box;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted, #8880a8);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.password-toggle:hover { color: var(--text, #fff); }
+
+/* Password match hint */
+.pw-match-hint {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: -0.25rem 0 0;
+}
+.pw-match    { color: #34d399; }
+.pw-no-match { color: #f87171; }

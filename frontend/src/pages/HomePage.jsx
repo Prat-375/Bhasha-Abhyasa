@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import AuthModal from "../components/AuthModal";
+import { getToken } from "../utils/auth";
 
 const LEVELS = [
   { level: "A1", cls: "level-a1", title: "Starter",       emoji: "🌱" },
@@ -121,13 +123,12 @@ const ILLUSTRATIONS = {
   ),
 };
 
-function LevelCard({ level, cls, title, emoji }) {
-  const navigate = useNavigate();
+function LevelCard({ level, cls, title, emoji, onNavigate }) {
   return (
     <div
       className={`card level-card ${cls} level-card-inner`}
       data-level={level}
-      onClick={() => navigate(`/mode/${level}`)}
+      onClick={() => onNavigate(`/mode/${level}`)}
     >
       <div className="level-card-top">
         <span className="level-badge">{level}</span>
@@ -150,8 +151,18 @@ function ArrowBtn({ dir, onClick }) {
 }
 
 function HomePage() {
-  const [offset, setOffset] = useState(0);
-  const [animDir, setAnimDir] = useState(null);
+  const [offset, setOffset]       = useState(0);
+  const [animDir, setAnimDir]     = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+
+  const handleNavigate = (path) => {
+    if (!getToken()) {
+      setShowModal(true);
+    } else {
+      navigate(path);
+    }
+  };
 
   const go = (dir) => {
     setAnimDir(dir);
@@ -178,7 +189,7 @@ function HomePage() {
               key={`${offset}-${pos}`}
               className={animDir ? (animDir === "next" ? "slide-in-right" : "slide-in-left") : ""}
             >
-              <LevelCard {...LEVELS[levelIdx]} />
+              <LevelCard {...LEVELS[levelIdx]} onNavigate={handleNavigate} />
             </div>
           ))}
         </div>
@@ -194,6 +205,8 @@ function HomePage() {
           />
         ))}
       </div>
+
+      {showModal && <AuthModal onClose={() => setShowModal(false)} />}
     </section>
   );
 }

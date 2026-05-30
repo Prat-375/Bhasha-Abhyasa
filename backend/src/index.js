@@ -12,6 +12,7 @@ import authRoutes from "./routes/authRoutes.js";
 import vocabRoutes from "./routes/vocabRoutes.js";
 import grammarRoutes from "./routes/grammarRoutes.js";
 import quizRoutes          from "./routes/quizRoutes.js";
+import forgotPasswordRoutes from "./routes/forgotPasswordRoutes.js";
 
 
 dotenv.config();
@@ -56,6 +57,7 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/vocab", vocabRoutes);
 app.use("/api/grammar", grammarRoutes);
 app.use("/api/quiz", quizRoutes);
+app.use("/api/auth", forgotPasswordRoutes);
 
 
 const PORT = process.env.PORT || 5000;
