@@ -1,14 +1,14 @@
 import { Link, useNavigate } from "react-router";
-import { getUser, logout } from "../utils/auth";
+import { logout } from "../utils/auth";
 
-function Navbar() {
+function Navbar({ user, setUser }) {
   const navigate = useNavigate();
-  const user = getUser();
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
-    window.location.reload();
+    setUser(null);
+    document.body.setAttribute("data-section", "auth");
+    navigate("/login", { replace: true });
   };
 
   return (

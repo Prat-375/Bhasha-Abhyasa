@@ -2,16 +2,13 @@ import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
 import { saveAuth } from "../utils/auth";
 
-function LoginPage() {
+function LoginPage({ setUser }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError]       = useState("");
 
-  // Message passed from signup page after successful registration
   const successMessage = location.state?.message;
-
-  // After login, go back to where they were trying to go (or home)
   const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e) => {
@@ -30,6 +27,7 @@ function LoginPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Login failed"); return; }
       saveAuth(data);
+      setUser(data.user); // fixed typo
       navigate(from, { replace: true });
     } catch {
       setError("Something went wrong during login");
