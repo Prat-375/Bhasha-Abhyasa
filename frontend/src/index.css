@@ -2533,6 +2533,172 @@ p { color: var(--text-soft); }
   .gs-stacked-word { font-size: 1.6rem; }
 }
 
+/* ── Blackboard cards ────────────────────────────────────────── */
+.bb-section { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.bb-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bb-cards-wrap {
+  flex: 1;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.bb-card {
+  position: relative;
+  border-radius: 6px;
+  overflow: visible;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+}
+
+/* Wood frame pieces */
+.bb-frame-top {
+  height: 22px;
+  background: linear-gradient(180deg, #c8873a 0%, #a0622a 40%, #8a501f 100%);
+  border-radius: 6px 6px 0 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.3);
+}
+
+.bb-frame-left,
+.bb-frame-right {
+  position: absolute;
+  top: 22px;
+  bottom: 38px;
+  width: 18px;
+  background: linear-gradient(90deg, #a0622a, #8a501f);
+  z-index: 2;
+}
+
+.bb-frame-left  { left: 0;  box-shadow: inset 2px 0 4px rgba(255,255,255,0.1); }
+.bb-frame-right { right: 0; box-shadow: inset -2px 0 4px rgba(255,255,255,0.1); }
+
+.bb-frame-bottom {
+  height: 38px;
+  background: linear-gradient(180deg, #8a501f 0%, #a0622a 50%, #c8873a 100%);
+  border-radius: 0 0 6px 6px;
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Chalk tray */
+.bb-chalk-tray {
+  position: absolute;
+  bottom: 8px;
+  left: 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.bb-chalk {
+  width: 28px;
+  height: 9px;
+  background: linear-gradient(90deg, #f5f0e8, #e8e0d0, #f5f0e8);
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.bb-chalk-short { width: 18px; }
+
+.bb-eraser {
+  width: 32px;
+  height: 14px;
+  background: linear-gradient(90deg, #c8873a, #b07030);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  margin-left: 4px;
+}
+
+/* Green surface */
+.bb-surface {
+  flex: 1;
+  background: linear-gradient(145deg, #2d6a4f 0%, #1b4332 30%, #1a3d2e 70%, #2d6a4f 100%);
+  margin: 0 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1.75rem;
+  gap: 0.75rem;
+  min-height: 160px;
+}
+
+/* Subtle shine/glare */
+.bb-shine {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Item number in corner */
+.bb-item-num {
+  position: absolute;
+  top: 10px; left: 14px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+/* Chalk text */
+.bb-chalk-text {
+  font-family: 'Outfit', cursive, sans-serif;
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-weight: 500;
+  color: rgba(245, 240, 232, 0.92);
+  text-align: center;
+  line-height: 1.8;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  white-space: pre-line;
+  /* Chalk texture effect */
+  text-shadow:
+    0 0 8px rgba(245,240,232,0.3),
+    1px 1px 0 rgba(0,0,0,0.2);
+  letter-spacing: 0.03em;
+}
+
+/* Chalk smudge lines (decorative) */
+.bb-surface::before {
+  content: '';
+  position: absolute;
+  bottom: 18px; left: 10%; right: 10%;
+  height: 1px;
+  background: rgba(245,240,232,0.08);
+  pointer-events: none;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .bb-card    { min-height: 200px; }
+  .bb-surface { min-height: 140px; padding: 1.25rem 1.25rem; }
+  .bb-chalk-text { font-size: 0.9rem; }
+}
+
+@media (max-width: 520px) {
+  .bb-card    { min-height: 180px; }
+  .bb-surface { padding: 1rem; }
+  .bb-chalk-text { font-size: 0.85rem; }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    PRACTICE PAGE — Hören, Schreiben, Lesen, Sprechen
    ═══════════════════════════════════════════════════════════════ */

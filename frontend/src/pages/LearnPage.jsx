@@ -444,6 +444,78 @@ function GrammarExercise({ exercises, color, lessonIndex, lessonId, level, onCom
   );
 }
 
+// ─── Blackboard Slide ─────────────────────────────────────────────────────────
+function BlackboardSlide({ items, color, title }) {
+  const [startIndex, setStartIndex] = useState(0);
+
+  const getVisible = () => {
+    if (typeof window === "undefined") return 3;
+    if (window.innerWidth < 600)  return 1;
+    if (window.innerWidth < 1024) return 2;
+    return 3;
+  };
+
+  const [visible, setVisible] = useState(getVisible);
+
+  useEffect(() => {
+    const handle = () => setVisible(getVisible());
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, []);
+
+  const total = items.length;
+  const goNext = () => setStartIndex(i => (i + 1) % total);
+  const goPrev = () => setStartIndex(i => (i - 1 + total) % total);
+  const visibleIndices = Array.from({ length: Math.min(visible, total) }, (_, i) => (startIndex + i) % total);
+
+  return (
+    <div className="bb-section">
+      <div className="bb-slider-row">
+        <button className="gs-slider-arrow" onClick={goPrev}>←</button>
+        <div className="bb-cards-wrap" style={{ gridTemplateColumns: `repeat(${Math.min(visible, total)}, 1fr)` }}>
+          {visibleIndices.map((idx) => (
+            <div key={idx} className="bb-card">
+              {/* Wood frame top */}
+              <div className="bb-frame-top" />
+              <div className="bb-frame-left" />
+              <div className="bb-frame-right" />
+              <div className="bb-frame-bottom">
+                <div className="bb-chalk-tray">
+                  <div className="bb-chalk" />
+                  <div className="bb-chalk bb-chalk-short" />
+                  <div className="bb-eraser" />
+                </div>
+              </div>
+              {/* Green board surface */}
+              <div className="bb-surface">
+                {/* Board shine */}
+                <div className="bb-shine" />
+                {/* Item number */}
+                <div className="bb-item-num" style={{ color: color + "cc" }}>{idx + 1}</div>
+                {/* Text written in chalk */}
+                <p className="bb-chalk-text">{items[idx]}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="gs-slider-arrow" onClick={goNext}>→</button>
+      </div>
+      {/* Dots */}
+      <div className="gs-topic-dots" style={{ marginTop: "1rem" }}>
+        {items.map((_, i) => (
+          <div key={i} className="gs-topic-dot"
+            style={{
+              background: visibleIndices.includes(i) ? color : "rgba(255,255,255,0.2)",
+              width: visibleIndices.includes(i) ? "20px" : "7px",
+            }}
+            onClick={() => setStartIndex(i)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Grammar Lesson ────────────────────────────────────────────────────────────
 function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }) {
   const [activeTab, setActiveTab] = useState("rules");
@@ -459,6 +531,7 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
         <h2 className="gl-title">{lesson.title}</h2>
       </div>
       <div className="gl-explanation">{lesson.explanation}</div>
+
       <div className="gl-tabs">
         {tabs.map(tab => (
           <button key={tab}
@@ -469,13 +542,13 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
           </button>
         ))}
       </div>
+
+      {/* ── Rules as blackboard slider ── */}
       {activeTab === "rules" && (
-        <div className="gl-rules">
-          {lesson.rules.map((rule, i) => (
-            <div key={i} className={`gl-rule ${rule.startsWith("⚠️") ? "gl-rule-warn" : ""}`}>{rule}</div>
-          ))}
-        </div>
+        <BlackboardSlide items={lesson.rules} color={color} title="Rules" />
       )}
+
+      {/* ── Table ── */}
       {activeTab === "table" && lesson.table && (
         <div className="gl-table-wrap">
           <table className="gl-table">
@@ -493,16 +566,17 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
           </table>
         </div>
       )}
+
+      {/* ── Examples as blackboard slider ── */}
       {activeTab === "examples" && (
-        <div className="gl-examples">
-          {lesson.examples.map((ex, i) => (
-            <div key={i} className="gl-example-card">
-              <div className="gl-ex-de" style={{ borderLeftColor: color }}>{ex.de}</div>
-              <div className="gl-ex-en">{ex.en}</div>
-            </div>
-          ))}
-        </div>
+        <BlackboardSlide
+          items={lesson.examples.map(ex => `${ex.de}\n"${ex.en}"`)}
+          color={color}
+          title="Examples"
+        />
       )}
+
+      {/* ── Practice ── */}
       {activeTab === "practice" && (
         <GrammarExercise
           exercises={lesson.exercises} color={color}
