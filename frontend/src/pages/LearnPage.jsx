@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { getToken, getUser } from "../utils/auth";
 
@@ -11,6 +11,21 @@ const LEVEL_META = {
   B2: { rank: "Knight",       emoji: "✨", color: "#fbbf24", glow: "rgba(251,191,36,0.25)"  },
   C1: { rank: "Grand Master", emoji: "🌌", color: "#38bdf8", glow: "rgba(56,189,248,0.25)"  },
 };
+
+const CARD_COLORS = [
+  { bg: "#FDE047", line: "#FACC15", text: "#1a1a1a", tag: "#854d0e" },
+  { bg: "#F9A8D4", line: "#F472B6", text: "#1a1a1a", tag: "#9d174d" },
+  { bg: "#6EE7B7", line: "#34D399", text: "#1a1a1a", tag: "#065f46" },
+  { bg: "#C4B5FD", line: "#A78BFA", text: "#1a1a1a", tag: "#4c1d95" },
+  { bg: "#FDB975", line: "#FB923C", text: "#1a1a1a", tag: "#9a3412" },
+  { bg: "#93C5FD", line: "#60A5FA", text: "#1a1a1a", tag: "#1e3a8a" },
+  { bg: "#86EFAC", line: "#4ADE80", text: "#1a1a1a", tag: "#14532d" },
+  { bg: "#FCA5A5", line: "#F87171", text: "#1a1a1a", tag: "#991b1b" },
+];
+
+function getCardColor(index) {
+  return CARD_COLORS[index % CARD_COLORS.length];
+}
 
 function useFetch(url) {
   const [data, setData]       = useState(null);
@@ -65,11 +80,8 @@ function TopicSelect({ topics, lessonProgress, level, color, glow, onSelect }) {
   const isCompleted = (i) => lessonProgress.some(p => p.sectionType === "vocabulary" && p.sectionIndex === i && p.level === level && p.completed);
 
   const total = topics.length;
-
   const goNext = () => setStartIndex(i => (i + 1) % total);
   const goPrev = () => setStartIndex(i => (i - 1 + total) % total);
-
-  // Build visible indices in circular manner
   const visibleIndices = Array.from({ length: visible }, (_, i) => (startIndex + i) % total);
 
   return (
@@ -80,64 +92,46 @@ function TopicSelect({ topics, lessonProgress, level, color, glow, onSelect }) {
       </div>
 
       <div className="gs-topic-slider-row">
-
-        {/* Left arrow */}
         <button className="gs-slider-arrow" onClick={goPrev}>←</button>
 
-        {/* Cards */}
         <div className="gs-topic-cards-wrap" style={{ gridTemplateColumns: `repeat(${visible}, 1fr)` }}>
           {visibleIndices.map((topicIdx) => {
             const t         = topics[topicIdx];
             const unlocked  = isUnlocked(topicIdx);
             const completed = isCompleted(topicIdx);
             const active    = unlocked && !completed;
-
             return (
-              <div
-                key={topicIdx}
+              <div key={topicIdx}
                 className={`gs-topic-card ${!unlocked ? "gs-locked" : ""} ${completed ? "gs-completed" : ""} ${active ? "gs-active" : ""}`}
                 style={unlocked ? {
-                  "--tc": color,
-                  "--tg": glow,
+                  "--tc": color, "--tg": glow,
                   borderColor: completed ? "#34d39950" : active ? color + "60" : "transparent",
                   boxShadow: active ? `0 0 30px ${color}30` : "none",
                 } : {}}
                 onClick={() => unlocked && onSelect(topicIdx)}
               >
-                {!unlocked && (
-                  <div className="gs-lock-overlay">
-                    <span className="gs-lock-icon">🔒</span>
-                  </div>
-                )}
-
+                {!unlocked && <div className="gs-lock-overlay"><span>🔒</span></div>}
                 <div className="gs-topic-num"
                   style={completed
                     ? { background: "#34d39925", borderColor: "#34d39960", color: "#34d399" }
-                    : active
-                    ? { background: color + "20", borderColor: color + "50", color }
-                    : {}}>
+                    : active ? { background: color + "20", borderColor: color + "50", color } : {}}>
                   {completed ? "✓" : topicIdx + 1}
                 </div>
-
                 <div className="gs-topic-emoji">{t.icon}</div>
                 <div className="gs-topic-name">{t.topic}</div>
                 <div className="gs-topic-count" style={{ color: unlocked ? color : "var(--muted)" }}>
                   {t.words?.length} words
                 </div>
-
-                {completed && <div className="gs-topic-done-bar"   style={{ background: "#34d399" }} />}
+                {completed && <div className="gs-topic-done-bar"         style={{ background: "#34d399" }} />}
                 {active    && <div className="gs-topic-active-indicator" style={{ background: color }} />}
               </div>
             );
           })}
         </div>
 
-        {/* Right arrow */}
         <button className="gs-slider-arrow" onClick={goNext}>→</button>
-
       </div>
 
-      {/* Dots */}
       <div className="gs-topic-dots">
         {topics.map((_, i) => (
           <div key={i} className="gs-topic-dot"
@@ -153,63 +147,51 @@ function TopicSelect({ topics, lessonProgress, level, color, glow, onSelect }) {
   );
 }
 
-// ─── Immersive Flashcard Screen ────────────────────────────────────────────────
-function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress, onProgressUpdate, onBack, imageMap, onFetchImage }) {
-  const [cardIndex, setCardIndex] = useState(0);
+// ─── Stacked Flashcard Screen ──────────────────────────────────────────────────
+function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress, onProgressUpdate, onBack }) {
+  const [queue, setQueue]         = useState(() => topic.words.map((_, i) => i));
   const [flipped, setFlipped]     = useState(false);
+  const [flyDir, setFlyDir]       = useState(null);
   const [known, setKnown]         = useState(new Set());
-  const [exiting, setExiting]     = useState(null);
   const [completed, setCompleted] = useState(false);
+  const [animating, setAnimating] = useState(false);
 
-  const word  = topic.words[cardIndex];
-  const total = topic.words.length;
-  const pct   = Math.round((cardIndex / total) * 100);
+  const total     = topic.words.length;
+  const remaining = queue.length;
+  const topIdx    = queue[0];
+  const word      = topic.words[topIdx];
 
-  // Trigger fetch for current word if not cached
-  useEffect(() => {
-    if (word && !imageMap[word.de]) {
-      onFetchImage(word.de);
-    }
-  }, [cardIndex]);
-
-  // Prefetch next word too
-  useEffect(() => {
-    const nextWord = topic.words[cardIndex + 1];
-    if (nextWord && !imageMap[nextWord.de]) {
-      onFetchImage(nextWord.de);
-    }
-  }, [cardIndex]);
-
-  const imgUrl = imageMap[word?.de];
-
-  const goNext = (dir) => {
-    if (cardIndex >= total - 1) return;
-    setExiting(dir);
-    setTimeout(() => { setCardIndex(i => i + 1); setFlipped(false); setExiting(null); }, 280);
+  const flyAway = (dir, callback) => {
+    if (animating) return;
+    setAnimating(true);
+    setFlyDir(dir);
+    setTimeout(() => {
+      setFlyDir(null);
+      setFlipped(false);
+      setAnimating(false);
+      callback();
+    }, 420);
   };
 
-  const goPrev = () => {
-    if (cardIndex === 0) return;
-    setExiting("right");
-    setTimeout(() => { setCardIndex(i => i - 1); setFlipped(false); setExiting(null); }, 280);
-  };
-
-  const markKnown = async () => {
-    const newKnown = new Set([...known, cardIndex]);
-    setKnown(newKnown);
-    if (cardIndex === total - 1) {
-      const score = Math.round((newKnown.size / total) * 100);
-      await saveLessonProgress({ level, sectionType: "vocabulary", sectionIndex: topicIndex, sectionId: topic.topic, score });
-      onProgressUpdate();
-      setCompleted(true);
-    } else {
-      goNext("left");
-    }
+  const markKnown = () => {
+    flyAway("left", async () => {
+      const newKnown = new Set([...known, topIdx]);
+      setKnown(newKnown);
+      const newQueue = queue.slice(1);
+      setQueue(newQueue);
+      if (newQueue.length === 0) {
+        const score = Math.round((newKnown.size / total) * 100);
+        await saveLessonProgress({ level, sectionType: "vocabulary", sectionIndex: topicIndex, sectionId: topic.topic, score });
+        onProgressUpdate();
+        setCompleted(true);
+      }
+    });
   };
 
   const keepReviewing = () => {
-    if (cardIndex === total - 1) { setCardIndex(0); setFlipped(false); }
-    else goNext("left");
+    flyAway("right", () => {
+      setQueue(q => [...q.slice(1), q[0]]);
+    });
   };
 
   if (completed) {
@@ -239,97 +221,114 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
         <button className="gs-back-btn" onClick={onBack}>← {topic.topic}</button>
         <div className="gs-card-progress">
           <div className="gs-card-prog-track">
-            <div className="gs-card-prog-fill" style={{ width: `${pct}%`, background: color }} />
+            <div className="gs-card-prog-fill" style={{ width: `${Math.round((known.size / total) * 100)}%`, background: color }} />
           </div>
-          <span className="gs-card-counter" style={{ color }}>{cardIndex + 1} / {total}</span>
+          <span className="gs-card-counter" style={{ color }}>{known.size} / {total} known</span>
         </div>
-        <span className="gs-known-count" style={{ color }}>✓ {known.size} known</span>
+        <span className="gs-known-count" style={{ color }}>📚 {remaining} left</span>
       </div>
 
-      {/* Giant flashcard */}
-      <div className="gs-card-stage">
-        <div
-          className={`gs-flashcard ${flipped ? "gs-flipped" : ""} ${exiting === "left" ? "gs-exit-left" : exiting === "right" ? "gs-exit-right" : ""}`}
-          style={{ "--fc": color, "--fg": glow }}
-          onClick={() => !exiting && setFlipped(f => !f)}
-        >
-          <div className="gs-card-inner">
+      {/* Stacked deck */}
+      <div className="gs-deck-stage">
+        {queue.slice(0, 4).reverse().map((wordIdx, stackPos) => {
+          const isTop  = stackPos === queue.slice(0, 4).length - 1;
+          const depth  = queue.slice(0, 4).length - 1 - stackPos;
+          const col    = getCardColor(wordIdx);
+          const w      = topic.words[wordIdx];
 
-            {/* ── Front ── */}
-            <div className="gs-card-face gs-card-front">
-              {/* Background image */}
-              {imgUrl && (
-                <div className="gs-card-img-bg" style={{ backgroundImage: `url(${imgUrl})` }}>
-                  <div className="gs-card-img-overlay" />
+          return (
+            <div
+              key={wordIdx}
+              className={`gs-stacked-card
+                ${isTop && flipped      ? "gs-stacked-flipped" : ""}
+                ${isTop && flyDir === "left"  ? "gs-fly-left"  : ""}
+                ${isTop && flyDir === "right" ? "gs-fly-right" : ""}
+              `}
+              style={{
+                zIndex: isTop ? 10 : 10 - depth,
+                transform: isTop
+                  ? "translateY(0) rotate(0deg)"
+                  : `translateY(${depth * 10}px) rotate(${depth % 2 === 0 ? depth * 2 : -(depth * 2)}deg)`,
+                pointerEvents: isTop ? "auto" : "none",
+                cursor: isTop ? "pointer" : "default",
+              }}
+              onClick={() => isTop && !animating && setFlipped(f => !f)}
+            >
+              <div className="gs-stacked-inner">
+
+                {/* ── Front ── */}
+                <div className="gs-stacked-face gs-stacked-front" style={{ background: col.bg }}>
+                  <div className="gs-card-lines">
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <div key={i} className="gs-card-line" style={{ borderColor: col.line + "55" }} />
+                    ))}
+                  </div>
+                  <div className="gs-card-margin" />
+                  <div className="gs-stacked-tag" style={{ background: col.tag + "22", borderColor: col.tag + "60", color: col.tag }}>
+                    🇩🇪 German
+                  </div>
+                  <div className="gs-stacked-word" style={{ color: col.text }}>{w.de}</div>
+                  {w.plural && w.plural !== "-" && w.plural !== "(no plural)" && (
+                    <div className="gs-stacked-plural" style={{ color: col.tag }}>Plural: {w.plural}</div>
+                  )}
+                  {w.tip && (
+                    <div className="gs-stacked-tip" style={{ background: col.tag + "18", borderColor: col.tag + "40", color: col.tag }}>
+                      💡 {w.tip}
+                    </div>
+                  )}
+                  {isTop && <div className="gs-stacked-hint" style={{ color: col.tag + "99" }}>tap to flip ↺</div>}
                 </div>
-              )}
-              <div className="gs-card-bg-glow" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}10, transparent 60%)` }} />
-              <div className="gs-fc-corner gs-fc-tl" />
-              <div className="gs-fc-corner gs-fc-tr" />
-              <div className="gs-fc-corner gs-fc-bl" />
-              <div className="gs-fc-corner gs-fc-br" />
 
-              <div className="gs-card-lang-tag">🇩🇪 German</div>
-              <div className="gs-card-word">{word.de}</div>
-              {word.plural && word.plural !== "-" && word.plural !== "(no plural)" && (
-                <div className="gs-card-plural">Plural: {word.plural}</div>
-              )}
-              {word.tip && <div className="gs-card-tip">💡 {word.tip}</div>}
-              <div className="gs-card-hint">tap to flip ↺</div>
+                {/* ── Back ── */}
+                <div className="gs-stacked-face gs-stacked-back" style={{ background: col.bg }}>
+                  <div className="gs-card-lines">
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <div key={i} className="gs-card-line" style={{ borderColor: col.line + "55" }} />
+                    ))}
+                  </div>
+                  <div className="gs-card-margin" />
+                  <div className="gs-stacked-tag" style={{ background: col.tag + "22", borderColor: col.tag + "60", color: col.tag }}>
+                    🇬🇧 English
+                  </div>
+                  <div className="gs-stacked-word" style={{ color: col.text }}>{w.en}</div>
+                  {w.example && (
+                    <div className="gs-stacked-example" style={{ borderLeftColor: col.tag, color: col.tag + "cc" }}>
+                      "{w.example}"
+                    </div>
+                  )}
+                </div>
+
+              </div>
             </div>
-
-            {/* ── Back ── */}
-            <div className="gs-card-face gs-card-back">
-              {imgUrl && (
-                <div className="gs-card-img-bg" style={{ backgroundImage: `url(${imgUrl})` }}>
-                  <div className="gs-card-img-overlay" />
-                </div>
-              )}
-              <div className="gs-card-bg-glow" style={{ background: `radial-gradient(ellipse at 50% 100%, ${color}10, transparent 60%)` }} />
-              <div className="gs-fc-corner gs-fc-tl" />
-              <div className="gs-fc-corner gs-fc-tr" />
-              <div className="gs-fc-corner gs-fc-bl" />
-              <div className="gs-fc-corner gs-fc-br" />
-
-              <div className="gs-card-lang-tag">🇬🇧 English</div>
-              <div className="gs-card-word gs-word-en" style={{ color }}>{word.en}</div>
-              {word.example && (
-                <div className="gs-card-example" style={{ borderLeftColor: color + "80" }}>
-                  "{word.example}"
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
+          );
+        })}
       </div>
 
       {/* Action buttons */}
-      {flipped && (
-        <div className="gs-card-actions">
-          <button className="gs-action-btn gs-btn-review" onClick={keepReviewing}>🔁 Keep Reviewing</button>
-          <button className="gs-action-btn gs-btn-known"
-            style={{ borderColor: color + "60", background: color + "18", color }}
-            onClick={markKnown}>✓ Mark as Known</button>
-        </div>
-      )}
+      <div className={`gs-card-actions ${!flipped ? "gs-actions-hidden" : ""}`}>
+        <button className="gs-action-btn gs-btn-review" onClick={keepReviewing}>
+          🔁 Keep Reviewing
+        </button>
+        <button className="gs-action-btn gs-btn-known" onClick={markKnown}
+          style={{ background: "#22c55e18", borderColor: "#22c55e60", color: "#22c55e" }}>
+          ✓ Got it!
+        </button>
+      </div>
 
-      {/* Nav */}
-      <div className="gs-card-nav">
-        <button className="gs-nav-arrow" onClick={goPrev} disabled={cardIndex === 0}>←</button>
-        <div className="gs-nav-dots">
-          {Array.from({ length: Math.min(total, 7) }, (_, i) => {
-            const dotIdx = total <= 7 ? i : Math.floor((i / 6) * (total - 1));
-            return (
-              <div key={i} className="gs-nav-dot"
-                style={{
-                  background: dotIdx <= cardIndex ? color : "rgba(255,255,255,0.15)",
-                  width: dotIdx === cardIndex ? "20px" : "6px",
-                }} />
-            );
-          })}
-        </div>
-        <button className="gs-nav-arrow" onClick={() => goNext("left")} disabled={cardIndex === total - 1}>→</button>
+      {/* Progress dots */}
+      <div className="gs-deck-footer">
+        {Array.from({ length: Math.min(total, 10) }, (_, i) => (
+          <div key={i} className="gs-deck-dot"
+            style={{
+              background: i < known.size
+                ? "#22c55e"
+                : i < (total - remaining)
+                ? color
+                : "rgba(255,255,255,0.18)",
+              width: i < known.size ? "10px" : "8px",
+              height: i < known.size ? "10px" : "8px",
+            }} />
+        ))}
       </div>
 
     </div>
@@ -342,38 +341,6 @@ function VocabularySection({ level, lessonProgress, onProgressUpdate }) {
   const { color, glow } = meta;
   const { data: topics, loading, error } = useFetch(`${API}/api/vocab/${level}`);
   const [activeTopic, setActiveTopic] = useState(null);
-  const [imageMap, setImageMap]       = useState({});
-
-  // Load all cached images for this level on mount
-  useEffect(() => {
-    fetch(`${API}/api/vocab-images/${level}`)
-      .then(r => r.json())
-      .then(map => setImageMap(map || {}))
-      .catch(() => {});
-  }, [level]);
-
-  // Fetch + cache a single word image
-  const handleFetchImage = async (word) => {
-    if (imageMap[word]) {
-      console.log("✅ Already cached:", word, imageMap[word]);
-      return; // already cached locally
-    }
-    console.log("🔄 Fetching image for:", word);
-     
-    try {
-      const res  = await fetch(`${API}/api/vocab-images/fetch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word, level }),
-      });
-      const data = await res.json();
-      if (data.imageUrl) {
-        setImageMap(prev => ({ ...prev, [word]: data.imageUrl }));
-      }
-    } catch (e) {
-      console.error("Image fetch failed for", word, e);
-    }
-  };
 
   if (loading) return (
     <div className="gs-loading">
@@ -393,8 +360,6 @@ function VocabularySection({ level, lessonProgress, onProgressUpdate }) {
         lessonProgress={lessonProgress}
         onProgressUpdate={onProgressUpdate}
         onBack={() => setActiveTopic(null)}
-        imageMap={imageMap}
-        onFetchImage={handleFetchImage}
       />
     );
   }
@@ -449,10 +414,16 @@ function GrammarExercise({ exercises, color, lessonIndex, lessonId, level, onCom
           <div key={i} className={`ge-item ${submitted ? (correct ? "ge-correct" : "ge-wrong") : ""}`}>
             <div className="ge-sentence">{ex.sentence}</div>
             <div className="ge-input-row">
-              <input className={`ge-input ${submitted ? (correct ? "ge-inp-correct" : "ge-inp-wrong") : ""}`}
-                value={inputs[i]} onChange={(e) => !submitted && setInputs(p => ({ ...p, [i]: e.target.value }))}
-                placeholder="type answer..." disabled={submitted} />
-              {!submitted && <button className="ge-hint-btn" onClick={() => setHints(p => ({ ...p, [i]: !p[i] }))}>hint</button>}
+              <input
+                className={`ge-input ${submitted ? (correct ? "ge-inp-correct" : "ge-inp-wrong") : ""}`}
+                value={inputs[i]}
+                onChange={(e) => !submitted && setInputs(p => ({ ...p, [i]: e.target.value }))}
+                placeholder="type answer..."
+                disabled={submitted}
+              />
+              {!submitted && (
+                <button className="ge-hint-btn" onClick={() => setHints(p => ({ ...p, [i]: !p[i] }))}>hint</button>
+              )}
               {submitted && correct && <span className="ge-feedback ge-fb-ok">✓</span>}
               {submitted && wrong   && <span className="ge-feedback ge-fb-bad">✗ {ex.answer}</span>}
             </div>
@@ -480,7 +451,9 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
 
   return (
     <div className="grammar-lesson">
-      <button className="gs-back-btn" style={{ marginBottom: "1.5rem" }} onClick={onBack}>← Back to lessons</button>
+      <button className="gs-back-btn" style={{ marginBottom: "1.5rem" }} onClick={onBack}>
+        ← Back to lessons
+      </button>
       <div className="gl-header">
         <span className="gl-icon">{lesson.icon}</span>
         <h2 className="gl-title">{lesson.title}</h2>
@@ -488,7 +461,8 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
       <div className="gl-explanation">{lesson.explanation}</div>
       <div className="gl-tabs">
         {tabs.map(tab => (
-          <button key={tab} className={`gl-tab ${activeTab === tab ? "gl-tab-active" : ""}`}
+          <button key={tab}
+            className={`gl-tab ${activeTab === tab ? "gl-tab-active" : ""}`}
             style={activeTab === tab ? { borderColor: color, color } : {}}
             onClick={() => setActiveTab(tab)}>
             {{ rules: "📋 Rules", table: "📊 Table", examples: "💬 Examples", practice: "✏️ Practice" }[tab]}
@@ -511,7 +485,8 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
                 <tr key={ri}>
                   {row.map((cell, ci) => ci === 0
                     ? <td key={ci} className="gl-td-head">{cell}</td>
-                    : <td key={ci} style={cell.includes("→") ? { color } : {}}>{cell}</td>)}
+                    : <td key={ci} style={cell.includes("→") ? { color } : {}}>{cell}</td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -529,9 +504,11 @@ function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }
         </div>
       )}
       {activeTab === "practice" && (
-        <GrammarExercise exercises={lesson.exercises} color={color}
+        <GrammarExercise
+          exercises={lesson.exercises} color={color}
           lessonIndex={lessonIndex} lessonId={lesson.id}
-          level={level} onComplete={onComplete} />
+          level={level} onComplete={onComplete}
+        />
       )}
     </div>
   );
@@ -548,7 +525,7 @@ function GrammarSection({ level, color, glow, lessonProgress, onProgressUpdate }
       <p>Loading grammar...</p>
     </div>
   );
-  if (error)         return <p style={{ color: "var(--danger)" }}>Failed to load grammar.</p>;
+  if (error)            return <p style={{ color: "var(--danger)" }}>Failed to load grammar.</p>;
   if (!lessons?.length) return <p style={{ color: "var(--muted)" }}>No grammar yet.</p>;
 
   const isUnlocked  = (i) => {
@@ -586,35 +563,32 @@ function GrammarSection({ level, color, glow, lessonProgress, onProgressUpdate }
               disabled={!unlocked}
               style={unlocked ? { "--rc": color, "--rg": glow } : {}}
             >
-              {/* Left glow bar */}
               {unlocked && !completed && <div className="gs-row-bar" style={{ background: color }} />}
-              {completed          && <div className="gs-row-bar" style={{ background: "#34d399" }} />}
+              {completed             && <div className="gs-row-bar" style={{ background: "#34d399" }} />}
 
-              {/* Number */}
               <div className="gs-grammar-num"
-                style={completed ? { background: "#34d39925", borderColor: "#34d39960", color: "#34d399" }
-                  : unlocked ? { background: color + "20", borderColor: color + "50", color }
+                style={completed
+                  ? { background: "#34d39925", borderColor: "#34d39960", color: "#34d399" }
+                  : unlocked
+                  ? { background: color + "20", borderColor: color + "50", color }
                   : {}}>
                 {completed ? "✓" : !unlocked ? "🔒" : i + 1}
               </div>
 
-              {/* Icon */}
               <div className="gs-grammar-icon">{unlocked ? lesson.icon : "📖"}</div>
 
-              {/* Info */}
               <div className="gs-grammar-info">
                 <span className="gs-grammar-title">{lesson.title}</span>
                 <span className="gs-grammar-meta">
-                  {completed ? "✅ Completed"
-                    : !unlocked ? "🔒 Complete previous lesson first"
+                  {completed
+                    ? "✅ Completed"
+                    : !unlocked
+                    ? "🔒 Complete previous lesson first"
                     : `${lesson.rules?.length} rules · ${lesson.examples?.length} examples · ${lesson.exercises?.length} exercises`}
                 </span>
               </div>
 
-              {/* Arrow */}
-              {unlocked && (
-                <div className="gs-grammar-arrow" style={{ color }}>→</div>
-              )}
+              {unlocked && <div className="gs-grammar-arrow" style={{ color }}>→</div>}
             </button>
           );
         })}
@@ -702,10 +676,18 @@ function LearnPage() {
 
       {/* ── Content ── */}
       {sub === "vocabulary" && (
-        <VocabularySection level={level} lessonProgress={lessonProgress} onProgressUpdate={handleProgressUpdate} />
+        <VocabularySection
+          level={level}
+          lessonProgress={lessonProgress}
+          onProgressUpdate={handleProgressUpdate}
+        />
       )}
       {sub === "grammar" && (
-        <GrammarSection level={level} color={color} glow={glow} lessonProgress={lessonProgress} onProgressUpdate={handleProgressUpdate} />
+        <GrammarSection
+          level={level} color={color} glow={glow}
+          lessonProgress={lessonProgress}
+          onProgressUpdate={handleProgressUpdate}
+        />
       )}
 
     </section>
