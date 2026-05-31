@@ -154,42 +154,50 @@ function TopicSelect({ topics, lessonProgress, level, color, glow, onSelect }) {
 }
 
 // ─── Immersive Flashcard Screen ────────────────────────────────────────────────
-function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress, onProgressUpdate, onBack }) {
+function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress, onProgressUpdate, onBack, imageMap, onFetchImage }) {
   const [cardIndex, setCardIndex] = useState(0);
   const [flipped, setFlipped]     = useState(false);
   const [known, setKnown]         = useState(new Set());
-  const [exiting, setExiting]     = useState(null); // "left" | "right"
+  const [exiting, setExiting]     = useState(null);
   const [completed, setCompleted] = useState(false);
 
   const word  = topic.words[cardIndex];
   const total = topic.words.length;
-  const pct   = Math.round(((cardIndex) / total) * 100);
+  const pct   = Math.round((cardIndex / total) * 100);
+
+  // Trigger fetch for current word if not cached
+  useEffect(() => {
+    if (word && !imageMap[word.de]) {
+      onFetchImage(word.de);
+    }
+  }, [cardIndex]);
+
+  // Prefetch next word too
+  useEffect(() => {
+    const nextWord = topic.words[cardIndex + 1];
+    if (nextWord && !imageMap[nextWord.de]) {
+      onFetchImage(nextWord.de);
+    }
+  }, [cardIndex]);
+
+  const imgUrl = imageMap[word?.de];
 
   const goNext = (dir) => {
     if (cardIndex >= total - 1) return;
     setExiting(dir);
-    setTimeout(() => {
-      setCardIndex(i => i + 1);
-      setFlipped(false);
-      setExiting(null);
-    }, 280);
+    setTimeout(() => { setCardIndex(i => i + 1); setFlipped(false); setExiting(null); }, 280);
   };
 
   const goPrev = () => {
     if (cardIndex === 0) return;
     setExiting("right");
-    setTimeout(() => {
-      setCardIndex(i => i - 1);
-      setFlipped(false);
-      setExiting(null);
-    }, 280);
+    setTimeout(() => { setCardIndex(i => i - 1); setFlipped(false); setExiting(null); }, 280);
   };
 
   const markKnown = async () => {
     const newKnown = new Set([...known, cardIndex]);
     setKnown(newKnown);
     if (cardIndex === total - 1) {
-      // Last card — complete topic
       const score = Math.round((newKnown.size / total) * 100);
       await saveLessonProgress({ level, sectionType: "vocabulary", sectionIndex: topicIndex, sectionId: topic.topic, score });
       onProgressUpdate();
@@ -200,27 +208,23 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
   };
 
   const keepReviewing = () => {
-    if (cardIndex === total - 1) {
-      setCardIndex(0); setFlipped(false);
-    } else {
-      goNext("left");
-    }
+    if (cardIndex === total - 1) { setCardIndex(0); setFlipped(false); }
+    else goNext("left");
   };
 
-  // Completed screen
   if (completed) {
     return (
       <div className="gs-complete-screen">
-        <div className="gs-complete-inner" style={{ "--cc": color, "--cg": glow }}>
+        <div className="gs-complete-inner">
           <div className="gs-complete-glow" style={{ background: `radial-gradient(circle, ${glow}, transparent 65%)` }} />
           <span className="gs-complete-emoji">🎉</span>
           <h2 className="gs-complete-title" style={{ color }}>Topic Complete!</h2>
-          <p className="gs-complete-sub">{topic.topic} — {known.size}/{total} words learned</p>
+          <p className="gs-complete-sub">{topic.topic} · {known.size}/{total} words learned</p>
           <div className="gs-complete-actions">
             <button className="gs-complete-btn gs-btn-secondary" onClick={onBack}>← Back to Topics</button>
-            <button className="gs-complete-btn gs-btn-primary" style={{ background: color, boxShadow: `0 8px 30px ${color}50` }} onClick={onBack}>
-              Next Topic →
-            </button>
+            <button className="gs-complete-btn gs-btn-primary"
+              style={{ background: color, boxShadow: `0 8px 30px ${color}50` }}
+              onClick={onBack}>Next Topic →</button>
           </div>
         </div>
       </div>
@@ -232,18 +236,14 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
 
       {/* Top bar */}
       <div className="gs-card-topbar">
-        <button className="gs-back-btn" onClick={onBack}>
-          ← {topic.topic}
-        </button>
+        <button className="gs-back-btn" onClick={onBack}>← {topic.topic}</button>
         <div className="gs-card-progress">
           <div className="gs-card-prog-track">
             <div className="gs-card-prog-fill" style={{ width: `${pct}%`, background: color }} />
           </div>
           <span className="gs-card-counter" style={{ color }}>{cardIndex + 1} / {total}</span>
         </div>
-        <span className="gs-known-count" style={{ color }}>
-          ✓ {known.size} known
-        </span>
+        <span className="gs-known-count" style={{ color }}>✓ {known.size} known</span>
       </div>
 
       {/* Giant flashcard */}
@@ -255,49 +255,15 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
         >
           <div className="gs-card-inner">
 
-            {/* Front */}
+            {/* ── Front ── */}
             <div className="gs-card-face gs-card-front">
-              <div className="gs-card-bg-glow" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}12, transparent 60%)` }} />
-
-              {/* Garland top-left */}
-              <svg className="gs-card-garland-tl" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8"  cy="8"  r="5" fill="#f472b6" opacity="0.7"/>
-                <circle cx="20" cy="6"  r="3.5" fill="#34d399" opacity="0.7"/>
-                <circle cx="30" cy="10" r="4" fill="#fbbf24" opacity="0.7"/>
-                <circle cx="42" cy="7"  r="3" fill="#a78bfa" opacity="0.7"/>
-                <circle cx="52" cy="12" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <circle cx="6"  cy="20" r="3.5" fill="#38bdf8" opacity="0.7"/>
-                <circle cx="10" cy="32" r="4" fill="#fbbf24" opacity="0.6"/>
-                <circle cx="7"  cy="44" r="3" fill="#34d399" opacity="0.7"/>
-                <circle cx="12" cy="54" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <path d="M8,8 Q14,7 20,6 Q25,8 30,10 Q36,8 42,7 Q47,9 52,12" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <path d="M8,8 Q7,14 6,20 Q8,26 10,32 Q8,38 7,44 Q9,49 12,54" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                {/* Tiny leaves */}
-                <ellipse cx="15" cy="7"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(-20 15 7)"/>
-                <ellipse cx="36" cy="8"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(15 36 8)"/>
-                <ellipse cx="8"  cy="26" rx="1.5" ry="3" fill="#86efac" opacity="0.6" transform="rotate(-10 8 26)"/>
-                <ellipse cx="9"  cy="49" rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(25 9 49)"/>
-              </svg>
-
-              {/* Garland bottom-right */}
-              <svg className="gs-card-garland-br" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8"  cy="8"  r="5" fill="#f472b6" opacity="0.7"/>
-                <circle cx="20" cy="6"  r="3.5" fill="#34d399" opacity="0.7"/>
-                <circle cx="30" cy="10" r="4" fill="#fbbf24" opacity="0.7"/>
-                <circle cx="42" cy="7"  r="3" fill="#a78bfa" opacity="0.7"/>
-                <circle cx="52" cy="12" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <circle cx="6"  cy="20" r="3.5" fill="#38bdf8" opacity="0.7"/>
-                <circle cx="10" cy="32" r="4" fill="#fbbf24" opacity="0.6"/>
-                <circle cx="7"  cy="44" r="3" fill="#34d399" opacity="0.7"/>
-                <circle cx="12" cy="54" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <path d="M8,8 Q14,7 20,6 Q25,8 30,10 Q36,8 42,7 Q47,9 52,12" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <path d="M8,8 Q7,14 6,20 Q8,26 10,32 Q8,38 7,44 Q9,49 12,54" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <ellipse cx="15" cy="7"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(-20 15 7)"/>
-                <ellipse cx="36" cy="8"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(15 36 8)"/>
-                <ellipse cx="8"  cy="26" rx="1.5" ry="3" fill="#86efac" opacity="0.6" transform="rotate(-10 8 26)"/>
-                <ellipse cx="9"  cy="49" rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(25 9 49)"/>
-              </svg>
-
+              {/* Background image */}
+              {imgUrl && (
+                <div className="gs-card-img-bg" style={{ backgroundImage: `url(${imgUrl})` }}>
+                  <div className="gs-card-img-overlay" />
+                </div>
+              )}
+              <div className="gs-card-bg-glow" style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}10, transparent 60%)` }} />
               <div className="gs-fc-corner gs-fc-tl" />
               <div className="gs-fc-corner gs-fc-tr" />
               <div className="gs-fc-corner gs-fc-bl" />
@@ -308,52 +274,18 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
               {word.plural && word.plural !== "-" && word.plural !== "(no plural)" && (
                 <div className="gs-card-plural">Plural: {word.plural}</div>
               )}
-              {word.tip && (
-                <div className="gs-card-tip">💡 {word.tip}</div>
-              )}
+              {word.tip && <div className="gs-card-tip">💡 {word.tip}</div>}
               <div className="gs-card-hint">tap to flip ↺</div>
             </div>
 
-            {/* Back */}
+            {/* ── Back ── */}
             <div className="gs-card-face gs-card-back">
-              <div className="gs-card-bg-glow" style={{ background: `radial-gradient(ellipse at 50% 100%, ${color}12, transparent 60%)` }} />
-
-              <svg className="gs-card-garland-tl" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8"  cy="8"  r="5" fill="#f472b6" opacity="0.7"/>
-                <circle cx="20" cy="6"  r="3.5" fill="#34d399" opacity="0.7"/>
-                <circle cx="30" cy="10" r="4" fill="#fbbf24" opacity="0.7"/>
-                <circle cx="42" cy="7"  r="3" fill="#a78bfa" opacity="0.7"/>
-                <circle cx="52" cy="12" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <circle cx="6"  cy="20" r="3.5" fill="#38bdf8" opacity="0.7"/>
-                <circle cx="10" cy="32" r="4" fill="#fbbf24" opacity="0.6"/>
-                <circle cx="7"  cy="44" r="3" fill="#34d399" opacity="0.7"/>
-                <circle cx="12" cy="54" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <path d="M8,8 Q14,7 20,6 Q25,8 30,10 Q36,8 42,7 Q47,9 52,12" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <path d="M8,8 Q7,14 6,20 Q8,26 10,32 Q8,38 7,44 Q9,49 12,54" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <ellipse cx="15" cy="7"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(-20 15 7)"/>
-                <ellipse cx="36" cy="8"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(15 36 8)"/>
-                <ellipse cx="8"  cy="26" rx="1.5" ry="3" fill="#86efac" opacity="0.6" transform="rotate(-10 8 26)"/>
-                <ellipse cx="9"  cy="49" rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(25 9 49)"/>
-              </svg>
-
-              <svg className="gs-card-garland-br" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8"  cy="8"  r="5" fill="#f472b6" opacity="0.7"/>
-                <circle cx="20" cy="6"  r="3.5" fill="#34d399" opacity="0.7"/>
-                <circle cx="30" cy="10" r="4" fill="#fbbf24" opacity="0.7"/>
-                <circle cx="42" cy="7"  r="3" fill="#a78bfa" opacity="0.7"/>
-                <circle cx="52" cy="12" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <circle cx="6"  cy="20" r="3.5" fill="#38bdf8" opacity="0.7"/>
-                <circle cx="10" cy="32" r="4" fill="#fbbf24" opacity="0.6"/>
-                <circle cx="7"  cy="44" r="3" fill="#34d399" opacity="0.7"/>
-                <circle cx="12" cy="54" r="4.5" fill="#f472b6" opacity="0.6"/>
-                <path d="M8,8 Q14,7 20,6 Q25,8 30,10 Q36,8 42,7 Q47,9 52,12" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <path d="M8,8 Q7,14 6,20 Q8,26 10,32 Q8,38 7,44 Q9,49 12,54" stroke="#d1a8c4" strokeWidth="1.2" fill="none" opacity="0.4"/>
-                <ellipse cx="15" cy="7"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(-20 15 7)"/>
-                <ellipse cx="36" cy="8"  rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(15 36 8)"/>
-                <ellipse cx="8"  cy="26" rx="1.5" ry="3" fill="#86efac" opacity="0.6" transform="rotate(-10 8 26)"/>
-                <ellipse cx="9"  cy="49" rx="3" ry="1.5" fill="#86efac" opacity="0.6" transform="rotate(25 9 49)"/>
-              </svg>
-
+              {imgUrl && (
+                <div className="gs-card-img-bg" style={{ backgroundImage: `url(${imgUrl})` }}>
+                  <div className="gs-card-img-overlay" />
+                </div>
+              )}
+              <div className="gs-card-bg-glow" style={{ background: `radial-gradient(ellipse at 50% 100%, ${color}10, transparent 60%)` }} />
               <div className="gs-fc-corner gs-fc-tl" />
               <div className="gs-fc-corner gs-fc-tr" />
               <div className="gs-fc-corner gs-fc-bl" />
@@ -367,6 +299,7 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </div>
@@ -374,18 +307,14 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
       {/* Action buttons */}
       {flipped && (
         <div className="gs-card-actions">
-          <button className="gs-action-btn gs-btn-review" onClick={keepReviewing}>
-            🔁 Keep Reviewing
-          </button>
+          <button className="gs-action-btn gs-btn-review" onClick={keepReviewing}>🔁 Keep Reviewing</button>
           <button className="gs-action-btn gs-btn-known"
             style={{ borderColor: color + "60", background: color + "18", color }}
-            onClick={markKnown}>
-            ✓ Mark as Known
-          </button>
+            onClick={markKnown}>✓ Mark as Known</button>
         </div>
       )}
 
-      {/* Nav arrows */}
+      {/* Nav */}
       <div className="gs-card-nav">
         <button className="gs-nav-arrow" onClick={goPrev} disabled={cardIndex === 0}>←</button>
         <div className="gs-nav-dots">
@@ -393,12 +322,16 @@ function FlashcardScreen({ topic, topicIndex, color, glow, level, lessonProgress
             const dotIdx = total <= 7 ? i : Math.floor((i / 6) * (total - 1));
             return (
               <div key={i} className="gs-nav-dot"
-                style={{ background: dotIdx <= cardIndex ? color : "rgba(255,255,255,0.15)", width: dotIdx === cardIndex ? "20px" : "6px" }} />
+                style={{
+                  background: dotIdx <= cardIndex ? color : "rgba(255,255,255,0.15)",
+                  width: dotIdx === cardIndex ? "20px" : "6px",
+                }} />
             );
           })}
         </div>
         <button className="gs-nav-arrow" onClick={() => goNext("left")} disabled={cardIndex === total - 1}>→</button>
       </div>
+
     </div>
   );
 }
@@ -409,6 +342,38 @@ function VocabularySection({ level, lessonProgress, onProgressUpdate }) {
   const { color, glow } = meta;
   const { data: topics, loading, error } = useFetch(`${API}/api/vocab/${level}`);
   const [activeTopic, setActiveTopic] = useState(null);
+  const [imageMap, setImageMap]       = useState({});
+
+  // Load all cached images for this level on mount
+  useEffect(() => {
+    fetch(`${API}/api/vocab-images/${level}`)
+      .then(r => r.json())
+      .then(map => setImageMap(map || {}))
+      .catch(() => {});
+  }, [level]);
+
+  // Fetch + cache a single word image
+  const handleFetchImage = async (word) => {
+    if (imageMap[word]) {
+      console.log("✅ Already cached:", word, imageMap[word]);
+      return; // already cached locally
+    }
+    console.log("🔄 Fetching image for:", word);
+     
+    try {
+      const res  = await fetch(`${API}/api/vocab-images/fetch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word, level }),
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setImageMap(prev => ({ ...prev, [word]: data.imageUrl }));
+      }
+    } catch (e) {
+      console.error("Image fetch failed for", word, e);
+    }
+  };
 
   if (loading) return (
     <div className="gs-loading">
@@ -416,7 +381,7 @@ function VocabularySection({ level, lessonProgress, onProgressUpdate }) {
       <p>Loading vocabulary...</p>
     </div>
   );
-  if (error)        return <p style={{ color: "var(--danger)" }}>Failed to load vocabulary.</p>;
+  if (error)           return <p style={{ color: "var(--danger)" }}>Failed to load vocabulary.</p>;
   if (!topics?.length) return <p style={{ color: "var(--muted)" }}>No vocabulary yet.</p>;
 
   if (activeTopic !== null) {
@@ -428,6 +393,8 @@ function VocabularySection({ level, lessonProgress, onProgressUpdate }) {
         lessonProgress={lessonProgress}
         onProgressUpdate={onProgressUpdate}
         onBack={() => setActiveTopic(null)}
+        imageMap={imageMap}
+        onFetchImage={handleFetchImage}
       />
     );
   }

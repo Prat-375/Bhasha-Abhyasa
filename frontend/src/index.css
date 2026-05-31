@@ -2705,20 +2705,6 @@ p { color: var(--text-soft); }
 .gs-fc-bl { bottom: 14px; left: 14px;  border-right: none; border-top: none;    border-radius: 0 0 0 3px; }
 .gs-fc-br { bottom: 14px; right: 14px; border-left: none;  border-top: none;    border-radius: 0 0 3px 0; }
 
-/* Garland decorations */
-.gs-card-garland-tl,
-.gs-card-garland-br {
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.55;
-}
-
-.gs-card-garland-tl { top: 0; left: 0; }
-.gs-card-garland-br { bottom: 0; right: 0; transform: rotate(180deg); }
-
 /* ── Card action buttons ─────────────────────────────────────── */
 .gs-card-actions {
   display: flex;
@@ -2939,6 +2925,23 @@ p { color: var(--text-soft); }
   border: 3px solid rgba(255,255,255,0.1);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+/* ── Card image background ───────────────────────────────────── */
+.gs-card-img-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--radius-xl);
+  z-index: 0;
+}
+
+.gs-card-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(245, 240, 232, 0.75);
+  border-radius: var(--radius-xl);
 }
 
 /* Grammar lesson view — keep existing styles */
