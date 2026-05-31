@@ -1,6 +1,8 @@
 import PracticeAttempt from "../models/PracticeAttempt.js";
 import Progress from "../models/Progress.js";
 import LessonProgress from "../models/LessonProgress.js";
+import Vocab from "../models/Vocab.js";
+import Grammar from "../models/Grammar.js";
 
 export const submitAttempt = async (req, res) => {
   try {
@@ -53,7 +55,6 @@ export const getUserProgress = async (req, res) => {
   }
 };
 
-// ── Save lesson progress (vocab topic or grammar lesson) ─────────────────────
 export const saveLessonProgress = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -87,7 +88,6 @@ export const saveLessonProgress = async (req, res) => {
   }
 };
 
-// ── Get full lesson progress for a user (for LearnPage locking) ──────────────
 export const getLessonProgress = async (req, res) => {
   try {
     if (req.user._id.toString() !== req.params.userId) {
@@ -100,7 +100,6 @@ export const getLessonProgress = async (req, res) => {
   }
 };
 
-// ── Dashboard summary — only levels user has started ─────────────────────────
 export const getDashboardSummary = async (req, res) => {
   try {
     if (req.user._id.toString() !== req.params.userId) {
@@ -113,28 +112,50 @@ export const getDashboardSummary = async (req, res) => {
       return res.status(200).json([]);
     }
 
-    // Group by level
-    const levelMap = {};
-    lessons.forEach((l) => {
-      if (!levelMap[l.level]) {
-        levelMap[l.level] = {
-          level: l.level,
-          vocabulary: { total: 0, completed: 0 },
-          grammar:    { total: 0, completed: 0 },
-        };
-      }
-      const section = levelMap[l.level][l.sectionType];
-      section.total += 1;
-      if (l.completed) section.completed += 1;
-    });
+    // Get unique levels the user has started
+    const startedLevels = [...new Set(lessons.map((l) => l.level))];
 
-    const summary = Object.values(levelMap).sort((a, b) =>
-      ["A1", "A2", "B1", "B2", "C1"].indexOf(a.level) -
-      ["A1", "A2", "B1", "B2", "C1"].indexOf(b.level)
+    // Fetch real totals from DB for each started level
+    const summary = await Promise.all(
+      startedLevels.map(async (level) => {
+        const [vocabDoc, grammarDoc] = await Promise.all([
+          Vocab.findOne({ level }).lean(),
+          Grammar.findOne({ level }).lean(),
+        ]);
+
+        const vocabTotal   = vocabDoc?.topics?.length   || 0;
+        const grammarTotal = grammarDoc?.lessons?.length || 0;
+
+        const vocabCompleted = lessons.filter(
+          (l) => l.level === level && l.sectionType === "vocabulary" && l.completed
+        ).length;
+
+        const grammarCompleted = lessons.filter(
+          (l) => l.level === level && l.sectionType === "grammar" && l.completed
+        ).length;
+
+        const totalSections  = vocabTotal + grammarTotal;
+        const totalCompleted = vocabCompleted + grammarCompleted;
+        const overallPct = totalSections > 0
+          ? Math.round((totalCompleted / totalSections) * 100)
+          : 0;
+
+        return {
+          level,
+          overallPct,
+          vocabulary: { completed: vocabCompleted, total: vocabTotal },
+          grammar:    { completed: grammarCompleted, total: grammarTotal },
+        };
+      })
     );
+
+    // Sort by level order
+    const ORDER = ["A1", "A2", "B1", "B2", "C1"];
+    summary.sort((a, b) => ORDER.indexOf(a.level) - ORDER.indexOf(b.level));
 
     res.status(200).json(summary);
   } catch (error) {
+    console.error("getDashboardSummary error:", error);
     res.status(500).json({ message: "Failed to fetch dashboard summary" });
   }
 };

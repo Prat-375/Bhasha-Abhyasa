@@ -12,6 +12,7 @@ import ResetPasswordPage   from "./pages/ResetPasswordPage";
 import Navbar              from "./components/Navbar";
 import ProtectedRoute      from "./components/ProtectedRoute";
 import { useRouteBackground } from "./hooks/useRouteBackground";
+import ProgressPage from "./pages/ProgressPage";
 import { getUser } from "./utils/auth";
 import "./routeBackgrounds.css";
 
@@ -40,6 +41,7 @@ function App() {
           <Route path="/mode/:level"      element={<ProtectedRoute><ModePage /></ProtectedRoute>} />
           <Route path="/learn/:level"     element={<ProtectedRoute><LearnPage /></ProtectedRoute>} />
           <Route path="/practice/:level"  element={<ProtectedRoute><PracticePage /></ProtectedRoute>} />
+          <Route path="/progress"         element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
         </Routes>
       </main>
     </div>
