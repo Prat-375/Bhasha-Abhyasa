@@ -50,6 +50,12 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+// ADD THIS LINE right here, before the vocab-images route
+app.post("/api/vocab-images/fetch", (req, res) => {
+  console.log("RAW ROUTE HIT", req.body);
+  res.json({ test: true, key: !!process.env.UNSPLASH_ACCESS_KEY });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/levels", levelRoutes);
