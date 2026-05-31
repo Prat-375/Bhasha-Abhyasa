@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { logout } from "../utils/auth";
+import UserDashboard from "./UserDashboard";
 
 function Navbar({ user, setUser }) {
   const navigate = useNavigate();
@@ -14,21 +15,17 @@ function Navbar({ user, setUser }) {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="brand">
-          Bhasha Abhyasa
-        </Link>
+        <Link to="/" className="brand">Bhasha Abhyasa</Link>
 
         <div className="nav-right">
           {user ? (
             <>
-              <span className="brand-subtitle">Hi, {user.name}</span>
-              <button className="nav-btn" onClick={handleLogout}>
-                Logout
-              </button>
+              <UserDashboard user={user} />
+              <button className="nav-btn" onClick={handleLogout}>Logout</button>
             </>
           ) : (
             <>
-              <Link to="/login" className="nav-link">Login</Link>
+              <Link to="/login"  className="nav-link">Login</Link>
               <Link to="/signup" className="nav-link">Sign Up</Link>
             </>
           )}

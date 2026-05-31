@@ -1,25 +1,18 @@
-// LearnPage.jsx — fetches vocab and grammar from API
+// LearnPage.jsx — fetches vocab and grammar from API, with lesson locking
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
+import { getToken, getUser } from "../utils/auth";
 
 const API = import.meta.env.VITE_API_URL;
 
-const LEVEL_COLORS = {
-  A1: "#a78bfa", A2: "#34d399", B1: "#f472b6", B2: "#fbbf24", C1: "#38bdf8",
-};
-const LEVEL_LABELS = {
-  A1: "Beginner", A2: "Elementary", B1: "Intermediate", B2: "Upper Intermediate", C1: "Advanced",
-};
-const LEVEL_TITLES = {
-  A1: "Starter", A2: "Elementary", B1: "Intermediate", B2: "Advanced", C1: "Mastery",
-};
+const LEVEL_COLORS  = { A1: "#a78bfa", A2: "#34d399", B1: "#f472b6", B2: "#fbbf24", C1: "#38bdf8" };
+const LEVEL_LABELS  = { A1: "Beginner", A2: "Elementary", B1: "Intermediate", B2: "Upper Intermediate", C1: "Advanced" };
+const LEVEL_TITLES  = { A1: "Starter", A2: "Elementary", B1: "Intermediate", B2: "Advanced", C1: "Mastery" };
 
-// ─── useFetch hook ─────────────────────────────────────────────────────────────
 function useFetch(url) {
-  const [data, setData]     = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
-
+  const [error, setError]     = useState(null);
   useEffect(() => {
     if (!url) return;
     setLoading(true); setError(null);
@@ -28,18 +21,28 @@ function useFetch(url) {
       .then((d) => { setData(d); setLoading(false); })
       .catch((e) => { setError(e.message); setLoading(false); });
   }, [url]);
-
   return { data, loading, error };
 }
 
-// ─── Skeleton loader ───────────────────────────────────────────────────────────
 function Skeleton({ height = "200px" }) {
   return (
-    <div style={{
-      height, borderRadius: "var(--radius)", background: "rgba(255,255,255,0.05)",
-      animation: "pulse 1.5s ease infinite",
-    }} />
+    <div style={{ height, borderRadius: "var(--radius)", background: "rgba(255,255,255,0.05)", animation: "pulse 1.5s ease infinite" }} />
   );
+}
+
+// ── Save lesson progress helper ───────────────────────────────────────────────
+async function saveLessonProgress({ level, sectionType, sectionIndex, sectionId, score }) {
+  const token = getToken();
+  if (!token) return;
+  try {
+    await fetch(`${API}/api/progress/lesson`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ level, sectionType, sectionIndex, sectionId, score }),
+    });
+  } catch (e) {
+    console.error("Failed to save lesson progress", e);
+  }
 }
 
 // ─── Flashcard ─────────────────────────────────────────────────────────────────
@@ -77,7 +80,7 @@ function VocabFlashcard({ word, color, onNext, onPrev, index, total, showBack, o
 }
 
 // ─── Vocabulary Section ────────────────────────────────────────────────────────
-function VocabularySection({ level }) {
+function VocabularySection({ level, lessonProgress, onProgressUpdate }) {
   const color = LEVEL_COLORS[level];
   const { data: topics, loading, error } = useFetch(`${API}/api/vocab/${level}`);
   const [activeTopic, setActiveTopic] = useState(0);
@@ -90,15 +93,53 @@ function VocabularySection({ level }) {
   if (error)   return <p style={{ color: "var(--danger)" }}>Failed to load vocabulary: {error}</p>;
   if (!topics?.length) return <p style={{ color: "var(--muted)" }}>No vocabulary for this level yet.</p>;
 
+  // Check if a topic is unlocked
+  const isTopicUnlocked = (i) => {
+    if (i === 0) return true;
+    const prev = lessonProgress.find(
+      (p) => p.sectionType === "vocabulary" && p.sectionIndex === i - 1 && p.level === level
+    );
+    return prev?.completed === true;
+  };
+
+  // Check if a topic is completed
+  const isTopicCompleted = (i) => {
+    return lessonProgress.some(
+      (p) => p.sectionType === "vocabulary" && p.sectionIndex === i && p.level === level && p.completed
+    );
+  };
+
   const topic = topics[activeTopic];
   const word  = topic?.words[cardIndex];
 
   const handleNext = () => { setShowBack(false); if (cardIndex < topic.words.length - 1) setCardIndex(cardIndex + 1); };
   const handlePrev = () => { setShowBack(false); if (cardIndex > 0) setCardIndex(cardIndex - 1); };
-  const switchTopic = (i) => { setActiveTopic(i); setCardIndex(0); setShowBack(false); };
-  const markKnown   = () => { setKnown((p) => new Set([...p, `${activeTopic}-${cardIndex}`])); handleNext(); };
-  const isKnown     = known.has(`${activeTopic}-${cardIndex}`);
-  const totalWords  = topics.reduce((s, t) => s + t.words.length, 0);
+
+  const switchTopic = (i) => {
+    if (!isTopicUnlocked(i)) return;
+    setActiveTopic(i); setCardIndex(0); setShowBack(false);
+  };
+
+  const markKnown = async () => {
+    const key = `${activeTopic}-${cardIndex}`;
+    const newKnown = new Set([...known, key]);
+    setKnown(newKnown);
+
+    // If all cards marked known → complete this topic
+    const allKnown = topic.words.every((_, wi) => newKnown.has(`${activeTopic}-${wi}`) || wi === cardIndex);
+    if (allKnown) {
+      const score = Math.round((newKnown.size / topic.words.length) * 100);
+      await saveLessonProgress({
+        level, sectionType: "vocabulary", sectionIndex: activeTopic,
+        sectionId: topic.topic, score,
+      });
+      onProgressUpdate();
+    }
+    handleNext();
+  };
+
+  const isKnown = known.has(`${activeTopic}-${cardIndex}`);
+  const totalWords = topics.reduce((s, t) => s + t.words.length, 0);
 
   return (
     <div className="learn-section">
@@ -114,13 +155,20 @@ function VocabularySection({ level }) {
       </div>
 
       <div className="topic-tabs">
-        {topics.map((t, i) => (
-          <button key={i} className={`topic-tab ${activeTopic === i ? "topic-tab-active" : ""}`}
-            style={activeTopic === i ? { borderColor: color, color } : {}}
-            onClick={() => switchTopic(i)}>
-            {t.icon} {t.topic}
-          </button>
-        ))}
+        {topics.map((t, i) => {
+          const unlocked  = isTopicUnlocked(i);
+          const completed = isTopicCompleted(i);
+          return (
+            <button key={i}
+              className={`topic-tab ${activeTopic === i ? "topic-tab-active" : ""} ${!unlocked ? "topic-tab-locked" : ""}`}
+              style={activeTopic === i ? { borderColor: color, color } : {}}
+              onClick={() => switchTopic(i)}
+              title={!unlocked ? "Complete the previous topic to unlock" : ""}
+            >
+              {completed ? "✅" : !unlocked ? "🔒" : ""} {t.icon} {t.topic}
+            </button>
+          );
+        })}
       </div>
 
       {viewMode === "cards" ? (
@@ -154,34 +202,47 @@ function VocabularySection({ level }) {
 }
 
 // ─── Grammar Exercise ──────────────────────────────────────────────────────────
-function GrammarExercise({ exercises, color }) {
-  const [inputs, setInputs]   = useState(exercises.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+function GrammarExercise({ exercises, color, lessonIndex, lessonId, level, onComplete }) {
+  const [inputs, setInputs]       = useState(exercises.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
   const [submitted, setSubmitted] = useState(false);
-  const [score, setScore]     = useState(0);
-  const [hints, setHints]     = useState({});
+  const [score, setScore]         = useState(0);
+  const [hints, setHints]         = useState({});
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     let correct = 0;
     exercises.forEach((ex, i) => {
-      const userParts = inputs[i].trim().toLowerCase().split(/\s*[/,]\s*/);
+      const userParts   = inputs[i].trim().toLowerCase().split(/\s*[/,]\s*/);
       const answerParts = ex.answer.toLowerCase().split(/\s*[/,]\s*/);
       const ok = answerParts.every((part, pi) => userParts[pi] && (userParts[pi].includes(part) || part.includes(userParts[pi])));
       if (ok) correct++;
     });
-    setScore(correct); setSubmitted(true);
+    const pct = Math.round((correct / exercises.length) * 100);
+    setScore(correct);
+    setSubmitted(true);
+
+    // Save progress
+    await saveLessonProgress({
+      level, sectionType: "grammar", sectionIndex: lessonIndex,
+      sectionId: lessonId, score: pct,
+    });
+    onComplete(pct);
   };
 
-  const reset = () => { setInputs(exercises.reduce((a, _, i) => ({ ...a, [i]: "" }), {})); setSubmitted(false); setScore(0); setHints({}); };
+  const reset = () => {
+    setInputs(exercises.reduce((a, _, i) => ({ ...a, [i]: "" }), {}));
+    setSubmitted(false); setScore(0); setHints({});
+  };
+
   const pct = submitted ? Math.round((score / exercises.length) * 100) : 0;
 
   return (
     <div className="grammar-exercises">
       <h4 className="ge-title">Practice Exercises</h4>
       {exercises.map((ex, i) => {
-        const ans = inputs[i]?.trim().toLowerCase() || "";
+        const ans     = inputs[i]?.trim().toLowerCase() || "";
         const expected = ex.answer.toLowerCase();
-        const correct = submitted && (ans.includes(expected) || expected.includes(ans) || ans === expected);
-        const wrong   = submitted && !correct;
+        const correct  = submitted && (ans.includes(expected) || expected.includes(ans) || ans === expected);
+        const wrong    = submitted && !correct;
         return (
           <div key={i} className={`ge-item ${submitted ? (correct ? "ge-correct" : "ge-wrong") : ""}`}>
             <div className="ge-sentence">{ex.sentence}</div>
@@ -213,7 +274,7 @@ function GrammarExercise({ exercises, color }) {
 }
 
 // ─── Grammar Lesson ────────────────────────────────────────────────────────────
-function GrammarLesson({ lesson, color, onBack }) {
+function GrammarLesson({ lesson, lessonIndex, color, level, onBack, onComplete }) {
   const [activeTab, setActiveTab] = useState("rules");
   const tabs = ["rules", lesson.table ? "table" : null, "examples", "practice"].filter(Boolean);
 
@@ -268,22 +329,49 @@ function GrammarLesson({ lesson, color, onBack }) {
           ))}
         </div>
       )}
-      {activeTab === "practice" && <GrammarExercise exercises={lesson.exercises} color={color} />}
+      {activeTab === "practice" && (
+        <GrammarExercise
+          exercises={lesson.exercises} color={color}
+          lessonIndex={lessonIndex} lessonId={lesson.id}
+          level={level} onComplete={onComplete}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Grammar Section ───────────────────────────────────────────────────────────
-function GrammarSection({ level, color }) {
+function GrammarSection({ level, color, lessonProgress, onProgressUpdate }) {
   const { data: lessons, loading, error } = useFetch(`${API}/api/grammar/${level}`);
-  const [activeLesson, setActiveLesson] = useState(null);
+  const [activeLesson, setActiveLesson]   = useState(null);
 
   if (loading) return <><Skeleton height="80px" /><Skeleton height="80px" /><Skeleton height="80px" /></>;
   if (error)   return <p style={{ color: "var(--danger)" }}>Failed to load grammar: {error}</p>;
   if (!lessons?.length) return <p style={{ color: "var(--muted)" }}>No grammar lessons for this level yet.</p>;
 
+  const isLessonUnlocked = (i) => {
+    if (i === 0) return true;
+    const prev = lessonProgress.find(
+      (p) => p.sectionType === "grammar" && p.sectionIndex === i - 1 && p.level === level
+    );
+    return prev?.completed === true;
+  };
+
+  const isLessonCompleted = (i) => {
+    return lessonProgress.some(
+      (p) => p.sectionType === "grammar" && p.sectionIndex === i && p.level === level && p.completed
+    );
+  };
+
   if (activeLesson !== null) {
-    return <GrammarLesson lesson={lessons[activeLesson]} color={color} onBack={() => setActiveLesson(null)} />;
+    return (
+      <GrammarLesson
+        lesson={lessons[activeLesson]} lessonIndex={activeLesson}
+        color={color} level={level}
+        onBack={() => setActiveLesson(null)}
+        onComplete={() => { onProgressUpdate(); setActiveLesson(null); }}
+      />
+    );
   }
 
   return (
@@ -295,20 +383,34 @@ function GrammarSection({ level, color }) {
         </div>
       </div>
       <div className="grammar-lessons-list">
-        {lessons.map((lesson, i) => (
-          <button key={lesson.id} className="gl-card" onClick={() => setActiveLesson(i)}>
-            <div className="gl-card-left">
-              <span className="gl-card-icon">{lesson.icon}</span>
-              <div>
-                <div className="gl-card-title">{lesson.title}</div>
-                <div className="gl-card-meta">
-                  {lesson.rules?.length} rules · {lesson.examples?.length} examples · {lesson.exercises?.length} exercises
+        {lessons.map((lesson, i) => {
+          const unlocked  = isLessonUnlocked(i);
+          const completed = isLessonCompleted(i);
+          return (
+            <button key={lesson.id}
+              className={`gl-card ${!unlocked ? "gl-card-locked" : ""}`}
+              onClick={() => unlocked && setActiveLesson(i)}
+              disabled={!unlocked}
+              title={!unlocked ? "Complete the previous lesson to unlock" : ""}
+            >
+              <div className="gl-card-left">
+                <span className="gl-card-icon">
+                  {completed ? "✅" : !unlocked ? "🔒" : lesson.icon}
+                </span>
+                <div>
+                  <div className="gl-card-title">{lesson.title}</div>
+                  <div className="gl-card-meta">
+                    {completed ? "Completed ✓" : !unlocked ? "Locked — complete previous lesson first" :
+                      `${lesson.rules?.length} rules · ${lesson.examples?.length} examples · ${lesson.exercises?.length} exercises`}
+                  </div>
                 </div>
               </div>
-            </div>
-            <span className="gl-card-arrow" style={{ color }}>→</span>
-          </button>
-        ))}
+              <span className="gl-card-arrow" style={{ color: unlocked ? color : "var(--muted)" }}>
+                {unlocked ? "→" : "🔒"}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -331,22 +433,44 @@ function SubNav({ active, onChange, color }) {
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 function LearnPage() {
-  const { level }      = useParams();
-  const [sub, setSub]  = useState("vocabulary");
-  const color  = LEVEL_COLORS[level] || "#a78bfa";
-  const label  = LEVEL_LABELS[level] || level;
-  const title  = LEVEL_TITLES[level] || label;
+  const { level }     = useParams();
+  const [sub, setSub] = useState("vocabulary");
+  const color = LEVEL_COLORS[level] || "#a78bfa";
+  const label = LEVEL_LABELS[level] || level;
+  const title = LEVEL_TITLES[level] || label;
+  const user  = getUser();
+
+  const [lessonProgress, setLessonProgress] = useState([]);
+
+  // Fetch lesson progress on mount
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${API}/api/progress/lesson/${user._id}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setLessonProgress(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [user?._id]);
+
+  // Refresh progress after any lesson completion
+  const handleProgressUpdate = () => {
+    if (!user) return;
+    fetch(`${API}/api/progress/lesson/${user._id}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setLessonProgress(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  };
 
   return (
     <section className="content-section">
-
       <div className="page-hero-row">
         <div className="page-hero">
           <div className="page-hero-level" style={{ color, textShadow: `0 0 60px ${color}50` }}>{level}</div>
           <div className="page-hero-right">
-            <h1 className="page-hero-title">
-              <span style={{ color }}>{title}</span>
-            </h1>
+            <h1 className="page-hero-title"><span style={{ color }}>{title}</span></h1>
             <p className="page-hero-sub">Choose a section to start learning.</p>
           </div>
         </div>
@@ -355,8 +479,20 @@ function LearnPage() {
 
       <SubNav active={sub} onChange={setSub} color={color} />
 
-      {sub === "vocabulary" && <VocabularySection level={level} />}
-      {sub === "grammar"    && <GrammarSection    level={level} color={color} />}
+      {sub === "vocabulary" && (
+        <VocabularySection
+          level={level}
+          lessonProgress={lessonProgress}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
+      {sub === "grammar" && (
+        <GrammarSection
+          level={level} color={color}
+          lessonProgress={lessonProgress}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
     </section>
   );
 }
