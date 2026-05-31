@@ -4,17 +4,25 @@ import AuthModal from "../components/AuthModal";
 import { getToken } from "../utils/auth";
 
 const LEVELS = [
-  { level: "A1", cls: "level-a1", title: "Starter",       emoji: "🌱" },
-  { level: "A2", cls: "level-a2", title: "Elementary",    emoji: "🌿" },
-  { level: "B1", cls: "level-b1", title: "Intermediate",  emoji: "🌊" },
-  { level: "B2", cls: "level-b2", title: "Advanced",      emoji: "✨" },
-  { level: "C1", cls: "level-c1", title: "Mastery",       emoji: "🌌" },
+  { level: "A1", cls: "level-a1", title: "Starter",      emoji: "🌱" },
+  { level: "A2", cls: "level-a2", title: "Elementary",   emoji: "🌿" },
+  { level: "B1", cls: "level-b1", title: "Intermediate", emoji: "🌊" },
+  { level: "B2", cls: "level-b2", title: "Advanced",     emoji: "✨" },
+  { level: "C1", cls: "level-c1", title: "Mastery",      emoji: "🌌" },
 ];
 
 const N = LEVELS.length;
 
-function visibleIndices(offset) {
-  return [0, 1, 2].map(i => (offset + i) % N);
+// How many cards to show based on screen width
+function getVisibleCount() {
+  if (typeof window === "undefined") return 3;
+  if (window.innerWidth < 520) return 1;
+  if (window.innerWidth < 900) return 2;
+  return 3;
+}
+
+function visibleIndices(offset, count) {
+  return Array.from({ length: count }, (_, i) => (offset + i) % N);
 }
 
 const ILLUSTRATIONS = {
@@ -154,7 +162,15 @@ function HomePage() {
   const [offset, setOffset]       = useState(0);
   const [animDir, setAnimDir]     = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(getVisibleCount);
   const navigate = useNavigate();
+
+  // Update visible count on resize
+  useState(() => {
+    const handleResize = () => setVisibleCount(getVisibleCount());
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleNavigate = (path) => {
     if (!getToken()) {
@@ -170,7 +186,8 @@ function HomePage() {
     setTimeout(() => setAnimDir(null), 400);
   };
 
-  const shown = visibleIndices(offset);
+  const shown = visibleIndices(offset, visibleCount);
+  const isMobile = visibleCount === 1;
 
   return (
     <section className="content-section hp-section">
@@ -181,9 +198,15 @@ function HomePage() {
         </h1>
       </div>
 
+      {/* Cards — no side arrows on mobile */}
       <div className="hp-slider-row">
-        <ArrowBtn dir="left"  onClick={() => go("prev")} />
-        <div className="hp-cards-grid">
+        {!isMobile && <ArrowBtn dir="left" onClick={() => go("prev")} />}
+        <div
+          className="hp-cards-grid"
+          style={{
+            gridTemplateColumns: `repeat(${visibleCount}, 1fr)`,
+          }}
+        >
           {shown.map((levelIdx, pos) => (
             <div
               key={`${offset}-${pos}`}
@@ -193,8 +216,16 @@ function HomePage() {
             </div>
           ))}
         </div>
-        <ArrowBtn dir="right" onClick={() => go("next")} />
+        {!isMobile && <ArrowBtn dir="right" onClick={() => go("next")} />}
       </div>
+
+      {/* On mobile: arrows sit below the card centered */}
+      {isMobile && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "2rem", marginTop: "1rem" }}>
+          <ArrowBtn dir="left"  onClick={() => go("prev")} />
+          <ArrowBtn dir="right" onClick={() => go("next")} />
+        </div>
+      )}
 
       <div className="hp-dots">
         {LEVELS.map((_, i) => (

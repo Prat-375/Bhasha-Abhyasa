@@ -3936,3 +3936,70 @@ p { color: var(--text-soft); }
 }
 .pw-match    { color: #34d399; }
 .pw-no-match { color: #f87171; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 1280px — standard laptop ───────────────────────────────── */
+@media (max-width: 1280px) {
+  .page-container { padding: 2.5rem 1.25rem 5rem; }
+  .hp-cards-grid  { gap: 1rem; }
+}
+
+/* ── 1024px — 14" laptop ────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .page-container     { padding: 2rem 1rem 4rem; }
+  .navbar-inner       { padding: 0.9rem 1.25rem; }
+  .alv-stats-row      { grid-template-columns: repeat(2, 1fr); }
+  .mg-stats           { grid-template-columns: repeat(2, 1fr); }
+  .mode-cards-grid    { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .mode-card-box      { height: 260px; }
+}
+
+/* ── 768px — tablet ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .navbar-inner       { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .brand              { font-size: 1.2rem; }
+  .nav-link, .nav-btn { padding: 0.45rem 0.85rem; font-size: 0.82rem; }
+  .page-container     { padding: 1.75rem 1rem 3.5rem; }
+  .hp-cards-grid      { gap: 1rem; }
+  .level-card-inner   { height: 290px; }
+  .mode-cards-grid    { grid-template-columns: 1fr; }
+  .mode-card-box      { height: 220px; }
+  .page-hero-level    { font-size: clamp(3rem, 10vw, 5rem); }
+  .page-hero-title    { font-size: clamp(1.4rem, 4vw, 2rem); }
+  .mg-modules         { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .ms-hero            { flex-direction: column; text-align: center; }
+}
+
+/* ── 520px — phone ──────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .navbar-inner       { padding: 0.75rem 0.85rem; }
+  .brand              { font-size: 1.1rem; }
+  .brand-subtitle     { display: none; }
+  .nav-link, .nav-btn { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+  .page-container     { padding: 1.5rem 0.85rem 3rem; }
+  .level-card-inner   { height: 320px; }
+  .hp-hero h1         { font-size: 1.75rem; }
+  .page-hero          { gap: 0.85rem; }
+  .page-hero-level    { font-size: clamp(2.5rem, 9vw, 4rem); }
+  .auth-card          { padding: 1.5rem 1.1rem; }
+  .mg-stats           { grid-template-columns: repeat(2, 1fr); }
+  .mg-modules         { grid-template-columns: 1fr; }
+  .fc-card            { height: 260px; }
+  .result-screen      { padding: 1rem 0; }
+  .rs-breakdown       { gap: 1rem; padding: 0.9rem 1.25rem; }
+  .otp-box            { width: 42px; height: 52px; font-size: 1.3rem; }
+}
+
+/* ── 360px — small phone ────────────────────────────────────── */
+@media (max-width: 360px) {
+  .brand              { font-size: 1rem; }
+  .nav-link, .nav-btn { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
+  .page-container     { padding: 1.25rem 0.7rem 2.5rem; }
+  .hp-hero h1         { font-size: 1.5rem; }
+  .level-card-inner   { height: 280px; }
+  .auth-card          { padding: 1.25rem 0.9rem; }
+  .otp-box            { width: 36px; height: 46px; font-size: 1.1rem; }
+}
