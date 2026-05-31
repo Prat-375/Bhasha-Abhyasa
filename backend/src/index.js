@@ -8,6 +8,7 @@ import themeRoutes from "./routes/themeRoutes.js";
 import practiceQuestionRoutes from "./routes/practiceQuestionRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import sentenceCheckRoutes from "./routes/sentenceCheckRoutes.js";
 
 import vocabRoutes from "./routes/vocabRoutes.js";
 import grammarRoutes from "./routes/grammarRoutes.js";
@@ -58,6 +59,7 @@ app.use("/api/vocab", vocabRoutes);
 app.use("/api/grammar", grammarRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
+app.use("/api/sentence", sentenceCheckRoutes);
 
 
 const PORT = process.env.PORT || 5000;
